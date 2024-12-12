@@ -30,6 +30,8 @@ public class ForegroundService extends Service {
     private Handler handler;
     private Runnable runnable;
     private NotificationManager notificationManager;
+    int totalServers=0;
+    int onlineServers=0;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -45,8 +47,8 @@ public class ForegroundService extends Service {
         runnable = new Runnable() {
             @Override
             public void run() {
-                counterValue++;
-                Log.e("Service", "Counter: " + counterValue);
+//                counterValue++;
+//                Log.e("Service", "Counter: " + counterValue);
 
                 // Perform API request
                 new Thread(() -> {
@@ -57,7 +59,7 @@ public class ForegroundService extends Service {
                         connection.setConnectTimeout(5000);
                         connection.setReadTimeout(5000);
                         int responseCode = connection.getResponseCode();
-
+                        totalServers++;
                         if (responseCode == HttpURLConnection.HTTP_OK) {
                             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                             StringBuilder response = new StringBuilder();
@@ -66,6 +68,7 @@ public class ForegroundService extends Service {
                                 response.append(inputLine);
                             }
                             in.close();
+                            onlineServers++;
                             apiResponse = response.toString();
                         } else {
                             apiResponse = "Error: " + responseCode;
@@ -76,7 +79,7 @@ public class ForegroundService extends Service {
 
                     // Send broadcast with updated data
                     Intent broadcastIntent = new Intent("com.aliya.TO_GET_API_DATA");
-                    broadcastIntent.putExtra("counterValue", counterValue);
+//                    broadcastIntent.putExtra("counterValue", counterValue);
                     broadcastIntent.putExtra("apiResponse", apiResponse);
                     sendBroadcast(broadcastIntent);
                     updateNotification();
@@ -107,13 +110,11 @@ public class ForegroundService extends Service {
                     .setSmallIcon(R.drawable.companylogo)
                     .build();
         }
-
-
         return null;
     }
     private void updateNotification() {
         // Update the notification content
-        String updatedContentText = "Counter: " + counterValue + "\nResponse: " + apiResponse;
+        String updatedContentText = onlineServers + " of " + totalServers +  " Online " ;
 
         Notification notification = null;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -134,6 +135,8 @@ public class ForegroundService extends Service {
             if (intent != null) {
                 url = intent.getStringExtra("url");
                 Log.e("Service", "Updated URL: " + url);
+                totalServers=0;
+                onlineServers=0;
             }
         }
     };
@@ -143,6 +146,8 @@ public class ForegroundService extends Service {
         super.onDestroy();
         handler.removeCallbacks(runnable);
         unregisterReceiver(urlUpdateReceiver);
+        totalServers=0;
+        onlineServers=0;
     }
 
     @Nullable

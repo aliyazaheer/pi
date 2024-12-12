@@ -13,38 +13,35 @@ class HomeVU extends StackedView<HomeVM> {
   Widget builder(BuildContext context, HomeVM viewModel, Widget? child) {
     return Scaffold(
       appBar: AppBar(title: const Text('Foreground Service Example')),
-      body: viewModel.serverModels.isEmpty
-          ? const Center(
-              child:
-                  CircularProgressIndicator()) // Show a loader if the data is still loading
-          : ListView.builder(
-              itemCount: viewModel.urls.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'SERVER ${index + 1}',
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                      Text(
-                        'CPU LOAD %AGE',
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                      Text(
-                        viewModel.serverModels.isNotEmpty
-                            ? viewModel.serverModels[index].toString()
-                            : 'Loading...',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                );
-              },
+      body: ListView.builder(
+        itemCount: viewModel.urls.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'SERVER ${index + 1}',
+                  style: const TextStyle(fontSize: 20),
+                ),
+                Text(
+                  'CPU LOAD %AGE',
+                  style: const TextStyle(fontSize: 20),
+                ),
+                Text(
+                  viewModel.serverModels.isNotEmpty &&
+                          index < viewModel.serverModels.length
+                      ? viewModel.serverModels[index].cpu.loadPercentage
+                      : 'Loading...',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 20),
+              ],
             ),
+          );
+        },
+      ),
     );
   }
 

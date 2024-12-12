@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/services.dart';
 import 'package:flutter_platform_integration/model/model.dart';
 import 'package:stacked/stacked.dart';
@@ -55,11 +53,20 @@ class HomeVM extends BaseViewModel {
         final apiData =
             await methodChannel.invokeMethod('getData', {'url': url});
         if (apiData is String) {
-          // Assuming serverModelFromJson parses the response and gives CPU load
-          serverModel = serverModelFromJson(apiData);
-          // cpuLoadPercentages.add(serverModel?.cpu.loadPercentage ?? '');
+          try {
+            serverModel = serverModelFromJson(apiData);
+            print("+++++++++++++++++++++++++++");
+            if (serverModel != null) {
+              serverModels.add(serverModel!);
+              notifyListeners();
+              print(
+                  "++++++++++++++++++++Data Added Successfully++++++++++++++++++++");
+            }
+          } catch (e) {
+            print("Error parsing server data: $e");
+          }
         } else {
-          print("API data is not a string");
+          print("API data is not a string: $apiData");
         }
       }
     } catch (e) {
@@ -79,6 +86,8 @@ class HomeVM extends BaseViewModel {
           if (apiResponse is String) {
             try {
               serverModel = serverModelFromJson(apiResponse);
+              serverModels.add(serverModel!);
+              print("+++++++++++++++++++++++++++");
             } catch (e) {
               print("Error parsing API response: $e");
             }
@@ -96,57 +105,6 @@ class HomeVM extends BaseViewModel {
       },
     );
   }
-
-//   void _startListeningToApiStream() {
-//     eventChannel.receiveBroadcastStream().listen(
-//       (event) {
-//         print("received event::: $event");
-//         if (event != null) {
-//           counter = event['counterValue'] ?? counter;
-
-//           final apiResponse = event['apiResponse'];
-//           if (apiResponse is String) {
-//             print("API Response: $apiResponse"); // Log the raw response
-
-//             // Check if the response is a valid JSON
-//             if (isJson(apiResponse)) {
-//               try {
-//                 serverModel = serverModelFromJson(
-//                     apiResponse); // Attempt to parse as JSON
-//               } catch (e) {
-//                 print("Error parsing API response: $e");
-//               }
-//             } else {
-//               // Handle case where the response is not valid JSON (e.g., error response)
-//               print("Received non-JSON response: $apiResponse");
-//               // Optionally, set a fallback value for the server model or log the error
-//               serverModel =
-//                   null; // You can set a default value or leave it as null
-//             }
-//           } else {
-//             print("API response is not a string");
-//           }
-
-//           notifyListeners();
-//         } else {
-//           print("Received null event from stream");
-//         }
-//       },
-//       onError: (error) {
-//         print("Error listening to stream: $error");
-//       },
-//     );
-//   }
-
-// // Helper function to check if a string is valid JSON
-//   bool isJson(String response) {
-//     try {
-//       jsonDecode(response); // Try to parse the response as JSON
-//       return true; // Return true if valid JSON
-//     } catch (e) {
-//       return false; // Return false if it's not valid JSON
-//     }
-//   }
 }
 
 
