@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_platform_integration/model/model.dart';
 import 'package:stacked/stacked.dart';
@@ -14,9 +16,6 @@ class HomeVM extends BaseViewModel {
     "https://umair-stable.smartclinicpk.com/rms/v1/serverHealth"
   ];
 
-  // List<String> cpuLoadPercentages = [];
-
-  int counter = 0;
   ServerModel? serverModel;
   List<ServerModel> serverModels = [];
   Map<String, dynamic> data = {};
@@ -38,10 +37,8 @@ class HomeVM extends BaseViewModel {
 
   Future<void> _sendUrlToAndroid() async {
     try {
-      for (String url in urls) {
-        await methodChannel.invokeMethod('sendUrl', {'url': url});
-        print("Sent URL: $url"); // Log each URL sent
-      }
+      await methodChannel.invokeMethod('sendUrls', {'urls': urls});
+      print("Sent URL: $urls");
     } catch (e) {
       print("Failed to send URL: $e");
     }
@@ -49,183 +46,81 @@ class HomeVM extends BaseViewModel {
 
   Future<void> _startService() async {
     try {
-      for (String url in urls) {
-        final apiData =
-            await methodChannel.invokeMethod('getData', {'url': url});
-        if (apiData is String) {
-          try {
-            serverModel = serverModelFromJson(apiData);
-            print("+++++++++++++++++++++++++++");
-            if (serverModel != null) {
-              serverModels.add(serverModel!);
-              notifyListeners();
-              print(
-                  "++++++++++++++++++++Data Added Successfully++++++++++++++++++++");
-            }
-          } catch (e) {
-            print("Error parsing server data: $e");
-          }
-        } else {
-          print("API data is not a string: $apiData");
+      final apisData = await methodChannel.invokeMethod('getData');
+      if (apisData != null && apisData.isNotEmpty) {
+        // serverModels.clear();
+        for (String apiData in apisData) {
+          serverModel = serverModelFromJson(apiData);
+          serverModels.add(serverModel!);
         }
+        notifyListeners();
+        print("Received all responses from servers first time");
+      } else {
+        print("No data received from the service.");
       }
     } catch (e) {
       print("Failed to get data: $e");
     }
   }
 
+  // void _startListeningToApiStream() {
+  //   eventChannel.receiveBroadcastStream().listen(
+  //     (event) {
+  //       // if (event != null) {
+  //       // final apisResponse = event['apisResponse'];
+  //       if (event is List) {
+  //         try {
+  //           serverModels.clear();
+  //           for (var apiResponse in event) {
+  //             if (apiResponse is String) {
+  //               serverModel = serverModelFromJson(apiResponse);
+  //               serverModels.add(serverModel!);
+  //             }
+  //           }
+  //           notifyListeners();
+  //           print("Receiveing all responses froms servers");
+  //         } catch (e) {
+  //           print("Error parsing API response: $e");
+  //         }
+  //       } else {
+  //         print("Invalid response type");
+  //       }
+  //       // }
+  //       // else {
+  //       //   print("Received null or invalid event");
+  //       // }
+  //     },
+  //     onError: (error) {
+  //       print("Stream error: $error");
+  //     },
+  //   );
+  // }
+
   void _startListeningToApiStream() {
     eventChannel.receiveBroadcastStream().listen(
       (event) {
-        print("received event::: $event");
-        if (event != null) {
-          counter = event['counterValue'] ?? counter;
+        if (event is List) {
+          try {
+            serverModels.clear();
 
-          final apiResponse = event['apiResponse'];
-          print("API Response: $apiResponse");
-          if (apiResponse is String) {
-            try {
-              serverModel = serverModelFromJson(apiResponse);
-              serverModels.add(serverModel!);
-              print("+++++++++++++++++++++++++++");
-            } catch (e) {
-              print("Error parsing API response: $e");
+            for (var apiResponse in event) {
+              if (apiResponse is String) {
+                var jsonMap = jsonDecode(apiResponse);
+                serverModel = ServerModel.fromJson(jsonMap);
+                serverModels.add(serverModel!);
+              }
             }
-          } else {
-            print("API response is not a string");
+            notifyListeners();
+          } catch (e) {
+            print("Error parsing API response: $e");
           }
-
-          notifyListeners();
         } else {
-          print("Received null event from stream");
+          print("Invalid event type: ${event.runtimeType}");
         }
       },
       onError: (error) {
-        print("Error listening to stream: $error");
+        print("Stream error: $error");
       },
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import 'package:flutter/services.dart';
-// import 'package:flutter_platform_integration/model/model.dart';
-// import 'package:stacked/stacked.dart';
-
-// class HomeVM extends BaseViewModel {
-//   static const methodChannel =
-//       MethodChannel('com.aliya.servicespractice/foreground');
-//   static const eventChannel =
-//       EventChannel('com.aliya.servicespractice/counterStream');
-//   String url = "https://umair-stable.smartclinicpk.com/rms/v1/serverHealth";
-
-//   int counter = 0;
-//   String model = "";
-//   ServerModel? serverModel;
-
-//   Map<String, dynamic> data = {};
-
-//   Map<String, dynamic> get getData {
-//     return data;
-//   }
-
-//   void updateData(Map<String, dynamic> apiData) {
-//     data = apiData;
-//     notifyListeners();
-//   }
-
-//   Future<void> initialize() async {
-//     await getInitialCounterValue();
-//     await sendUrlToAndroid(url); 
-//     startListeningToCounterStream();
-//   }
-
-//   Future<void> sendUrlToAndroid(String url) async {
-//     try {
-//       await methodChannel.invokeMethod('sendUrl', {'url': url});
-//     } on PlatformException catch (e) {
-//       print("Failed to send URL: ${e.message}");
-//     }
-//   }
-
-//   Future<void> getInitialCounterValue() async {
-//     try {
-//       final apiData = await methodChannel
-//           .invokeMethod('getData', {'url': url}); // Pass URL here
-//       if (apiData != null) {
-//         if (apiData is String) {
-//           serverModel = serverModelFromJson(apiData);
-//         } else {
-//           print("Data model is not a string");
-//         }
-//       }
-//     } on PlatformException catch (e) {
-//       print("Failed to get data: ${e.message}");
-//     }
-//   }
-
-//   void startListeningToCounterStream() {
-//     eventChannel.receiveBroadcastStream().listen((event) {
-//       if (event != null) {
-//         // Ensure the event has the correct keys
-//         if (event['counterValue'] != null) {
-//           counter = event['counterValue'];
-//         }
-//         if (event['apiResponse'] != null) {
-//           try {
-//             final apiResponse = event['apiResponse'];
-//             if (apiResponse is String) {
-//               serverModel = serverModelFromJson(apiResponse);
-//               print('data model found');
-//             } else {
-//               print("data model is not string");
-//             }
-//           } catch (e) {
-//             print("Error parsing API response: $e");
-//           }
-//         }
-//         notifyListeners();
-//       } else {
-//         print("Received null event from stream");
-//       }
-//     });
-//   }
-// }

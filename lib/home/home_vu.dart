@@ -26,13 +26,13 @@ class HomeVU extends StackedView<HomeVM> {
                   style: const TextStyle(fontSize: 20),
                 ),
                 Text(
-                  'CPU LOAD %AGE',
+                  'MEMORY %AGE',
                   style: const TextStyle(fontSize: 20),
                 ),
                 Text(
                   viewModel.serverModels.isNotEmpty &&
                           index < viewModel.serverModels.length
-                      ? viewModel.serverModels[index].cpu.loadPercentage
+                      ? viewModel.serverModels[index].memory.percentage
                       : 'Loading...',
                   style: const TextStyle(fontSize: 16),
                 ),
