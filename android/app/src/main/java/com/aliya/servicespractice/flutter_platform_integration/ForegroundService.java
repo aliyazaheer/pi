@@ -57,7 +57,7 @@ public class ForegroundService extends Service {
                 } else {
                     Log.e(TAG, "No URLs available to process");
                 }
-                handler.postDelayed(this, 20000);
+                handler.postDelayed(this, 5000);
             }
         };
         handler.post(runnable);
@@ -81,8 +81,8 @@ public class ForegroundService extends Service {
                         URL apiUrl = new URL(urlString);
                         HttpURLConnection connection = (HttpURLConnection) apiUrl.openConnection();
                         connection.setRequestMethod("GET");
-                        connection.setConnectTimeout(10000);
-                        connection.setReadTimeout(10000);
+                        connection.setConnectTimeout(5000);
+                        connection.setReadTimeout(5000);
                         connection.setRequestProperty("Content-Type", "application/json");
 
                         int responseCode = connection.getResponseCode();
@@ -207,146 +207,3 @@ public class ForegroundService extends Service {
 
 
 
-
-
-
-
-
-
-
-
-//
-//public class ForegroundService extends Service {
-//    private List<String> urls;
-//    private Handler handler;
-//    private Runnable runnable;
-//    private NotificationManager notificationManager;
-//    int totalServers=0;
-//    int onlineServers=0;
-//    private static List<String> apisResponse = new ArrayList<>();
-//
-//    @Override
-//    public int onStartCommand(Intent intent, int flags, int startId) {
-//        Log.e("Service", "Foreground Service Started...");
-//
-//        // Register the receiver to update URL
-//        IntentFilter filter = new IntentFilter("com.aliya.SEND_URL");
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            registerReceiver(urlUpdateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-//        }
-//
-//        handler = new Handler();
-//        runnable = new Runnable() {
-//            @Override
-//            public void run() {
-//
-//                // Perform API request
-//                new Thread(() -> {
-//                    try {
-//                        apisResponse = new ArrayList<>();
-//                        for (String url : urls) {
-//                            URL apiUrl = new URL(url);
-//                            HttpURLConnection connection = (HttpURLConnection) apiUrl.openConnection();
-//                            connection.setRequestMethod("GET");
-//                            connection.setRequestProperty("Content-Type", "application/json");
-//                            int responseCode = connection.getResponseCode();
-//                            if (responseCode == HttpURLConnection.HTTP_OK) {
-//                                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-//                                StringBuilder response = new StringBuilder();
-//                                String inputLine;
-//                                while ((inputLine = in.readLine()) != null) {
-//                                    response.append(inputLine);
-//                                }
-//                                in.close();
-//                                apisResponse.add(response.toString());
-//                            } else {
-//                                Log.e("Service", "Error code: " + responseCode);
-//                            }
-//                        }
-//
-//
-//                    } catch (Exception e) {
-//                        Log.e("TAG","Error in hitting api");
-////                        apisResponse = "Exception: " + e.getMessage();
-//                    }
-//
-//                    // Send broadcast with updated data
-//                    Intent broadcastIntent = new Intent("com.aliya.TO_GET_API_DATA");
-//                    broadcastIntent.putStringArrayListExtra("apisResponse", new ArrayList<>(apisResponse));
-//                    sendBroadcast(broadcastIntent);
-//                    updateNotification();
-//                }).start();
-//
-//                handler.postDelayed(this, 5000);  // Repeat every 5 seconds
-//            }
-//        };
-//        handler.post(runnable);
-//
-//        // Start foreground notification
-//        startForeground(1001, createNotification());
-//        return START_STICKY;
-//    }
-//
-//    private Notification createNotification() {
-//        String CHANNEL_ID = "ForegroundServiceChannel";
-//        NotificationChannel channel = null;
-//        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            channel = new NotificationChannel(CHANNEL_ID, "Foreground Service", NotificationManager.IMPORTANCE_LOW);
-//            notificationManager.createNotificationChannel(channel);
-//        }
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            return new Notification.Builder(this, CHANNEL_ID)
-//                    .setContentTitle("Monitoring CHI Servers")
-//                    .setContentText("Servers are running")
-//                    .setSmallIcon(R.drawable.companylogo)
-//                    .build();
-//        }
-//        return null;
-//    }
-//    private void updateNotification() {
-//        // Update the notification content
-//        String updatedContentText = onlineServers + " of " + totalServers +  " Online " ;
-//
-//        Notification notification = null;
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            notification = new Notification.Builder(this, "ForegroundServiceChannel")
-//                    .setContentTitle("Monitoring CHI Servers")
-//                    .setContentText(updatedContentText)
-//                    .setSmallIcon(R.drawable.companylogo)
-//                    .build();
-//        }
-//        // Notify or update the existing notification
-//        notificationManager.notify(1001, notification);
-//    }
-//
-//    // Receive URL updates from MainActivity
-//    private final BroadcastReceiver urlUpdateReceiver = new BroadcastReceiver() {
-//        @Override
-//        public void onReceive(Context context, Intent intent) {
-//            if (intent != null && intent.hasExtra("urls")) {
-//                ArrayList<String> urls = intent.getStringArrayListExtra("urls");
-//                if (urls != null) {// Initialize urls list
-//                    Log.e("ForegroundService", "Received URLs: " + urls);
-//                }
-//            }
-//        }
-//    };
-//
-//
-//    @Override
-//    public void onDestroy() {
-//        super.onDestroy();
-//        handler.removeCallbacks(runnable);
-//        unregisterReceiver(urlUpdateReceiver);
-//        totalServers=0;
-//        onlineServers=0;
-//    }
-//
-//    @Nullable
-//    @Override
-//    public IBinder onBind(Intent intent) {
-//        return null;
-//    }
-//}
-//
