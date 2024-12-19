@@ -129,21 +129,22 @@ class HomeVM extends BaseViewModel {
   //   });
   // }
 
-  // Future<void> fetchData() async {
-  //   try {
-  //     final servers = await SharedPref.getSavedServerDetailsList();
-  //     if (servers.isNotEmpty) {
-  //       for (var server in servers) {
-  //         addServerDetailsList(server);
-  //         // fetchServerModel(server.serverUrl);
-  //       }
-  //       // countOnlineUpdate();
-  //       notifyListeners();
-  //     }
-  //   } catch (e) {
-  //     debugPrint('Error fetching server details: $e');
-  //   }
-  // }
+  Future<void> fetchData() async {
+    try {
+      final servers = await SharedPref.getSavedServerDetailsList();
+      if (servers.isNotEmpty) {
+        for (var server in servers) {
+          addServerDetailsList(server);
+          addUrlsInList(server.serverUrl);
+          // fetchServerModel(server.serverUrl);
+        }
+        // countOnlineUpdate();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error fetching server details: $e');
+    }
+  }
 
   // void stopTimer() {
   //   refreshTime?.cancel();
