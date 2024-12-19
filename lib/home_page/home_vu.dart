@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_platform_integration/shared_pref/shared_pref.dart';
 import 'package:stacked/stacked.dart';
 
 import '../models/server_details.dart';
@@ -15,10 +16,12 @@ class HomeVU extends StackedView<HomeVM> {
   Future<void> onViewModelReady(HomeVM viewModel) async {
     super.onViewModelReady(viewModel);
     await viewModel.initializeSwitchState();
+    await SharedPref.getSavedServerDetailsList();
+
     if (viewModel.isOn == true) {
-      viewModel.startTimer();
+      // viewModel.fetchData();
     } else {
-      viewModel.fetchData();
+      // viewModel.fetchData();
     }
   }
 
@@ -50,10 +53,12 @@ class HomeVU extends StackedView<HomeVM> {
               'No servers details available. Please add a server',
               style: TextStyle(fontSize: 12),
             ))
-          : RefreshIndicator(
-              onRefresh: viewModel.handleRefresh,
-              child: listOfServers(viewModel),
-            ),
+          :
+          // RefreshIndicator(
+          // onRefresh: viewModel.fetchData(),
+          // child:
+          listOfServers(viewModel),
+      // ),
       floatingActionButton: floatingAddServerButton(context, viewModel),
     );
   }

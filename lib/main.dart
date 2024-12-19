@@ -1,7 +1,8 @@
 import 'package:flutter_platform_integration/home_page/home_vu.dart';
-import 'package:flutter_platform_integration/prac/prac_vu.dart';
 import '../shared_pref/shared_pref.dart';
 import 'package:flutter/material.dart';
+
+import 'prac/prac_vu.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,8 +31,8 @@ class MyApp extends StatelessWidget {
           bodyMedium: TextStyle(color: Colors.white),
         ),
       ),
-      // home: HomeVU(),
-      home: PracVU(),
+      home: HomeVU(),
+      // home: PracVU(),
     );
   }
 }

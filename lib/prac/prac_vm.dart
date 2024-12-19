@@ -63,39 +63,6 @@ class PracVM extends BaseViewModel {
     }
   }
 
-  // void _startListeningToApiStream() {
-  //   eventChannel.receiveBroadcastStream().listen(
-  //     (event) {
-  //       // if (event != null) {
-  //       // final apisResponse = event['apisResponse'];
-  //       if (event is List) {
-  //         try {
-  //           serverModels.clear();
-  //           for (var apiResponse in event) {
-  //             if (apiResponse is String) {
-  //               serverModel = serverModelFromJson(apiResponse);
-  //               serverModels.add(serverModel!);
-  //             }
-  //           }
-  //           notifyListeners();
-  //           print("Receiveing all responses froms servers");
-  //         } catch (e) {
-  //           print("Error parsing API response: $e");
-  //         }
-  //       } else {
-  //         print("Invalid response type");
-  //       }
-  //       // }
-  //       // else {
-  //       //   print("Received null or invalid event");
-  //       // }
-  //     },
-  //     onError: (error) {
-  //       print("Stream error: $error");
-  //     },
-  //   );
-  // }
-
   void _startListeningToApiStream() {
     eventChannel.receiveBroadcastStream().listen(
       (event) {

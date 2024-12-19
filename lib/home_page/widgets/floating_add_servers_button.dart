@@ -15,7 +15,8 @@ FloatingActionButton floatingAddServerButton(
       if (result != null && result is ServerDetails) {
         await viewModel.addServerDetails(result);
         await SharedPref.saveServerDetailsList(viewModel.serverDetails);
-        await viewModel.fetchServerModel(result.serverUrl);
+        await viewModel.addUrlsInList(result.serverUrl);
+        // await viewModel.fetchServerModel(result.serverUrl);
         viewModel.notifyListeners();
       }
     },

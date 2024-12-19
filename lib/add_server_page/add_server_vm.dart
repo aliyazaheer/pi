@@ -34,10 +34,12 @@ class AddServerVM extends BaseViewModel {
 
       if (response.statusCode == 200) {
         serverModel = serverModelFromJson(response.body);
+        print("Fetched succesfully------------------------------------------");
         return serverModel;
       }
     } catch (e) {
       errorInFetchingData = "Failed to fetch server data";
+      print("Failed to fetch server data");
       // Fluttertoast.showToast(msg: errorInFetchingData!);
       serverModel = null;
     } finally {
@@ -56,6 +58,7 @@ class AddServerVM extends BaseViewModel {
     serverUrl = serverUrlController.text.trim();
     if (isValidServerUrl(serverUrl)) {
       if (serverName.isEmpty || serverUrl.isEmpty) {
+        debugPrint('field is empty....................');
         // Fluttertoast.showToast(
         //   msg: "Please fill all fields",
         // );
@@ -64,11 +67,13 @@ class AddServerVM extends BaseViewModel {
 
       await fetchServerModel(serverUrl);
       if (serverModel != null) {
+        debugPrint('server data fetched...................');
         // Fluttertoast.showToast(
         //   msg: "Server data fetched successfully",
         // );
         isUp = true;
       } else {
+        debugPrint('no server data available...................');
         // Fluttertoast.showToast(
         //   msg: "No server data available for this URL",
         // );

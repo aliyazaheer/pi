@@ -16,9 +16,9 @@ Column appBarSwitch(BuildContext context, HomeVM viewModel) {
             onChanged: (bool value) {
               viewModel.toggleSwitch();
               if (viewModel.isOn) {
-                viewModel.startTimer();
+                // viewModel.startTimer();
               } else {
-                viewModel.stopTimer();
+                // viewModel.stopTimer();
               }
             },
           ),
