@@ -10,18 +10,19 @@ import 'widgets/floating_add_servers_button.dart';
 import 'widgets/list_of_servers.dart';
 
 class HomeVU extends StackedView<HomeVM> {
+  final VoidCallback onThemeToggle;
   final ServerDetails? serverDetails;
-  HomeVU({super.key, this.serverDetails});
+
+  HomeVU({super.key, this.serverDetails, required this.onThemeToggle});
   @override
   Future<void> onViewModelReady(HomeVM viewModel) async {
     super.onViewModelReady(viewModel);
     await viewModel.initializeSwitchState();
     await SharedPref.getSavedServerDetailsList();
-
-    if (viewModel.isOn == true) {
-      // viewModel.fetchData();
+    if (viewModel.isServiceRunning == true) {
+      await viewModel.fetchDataAndStartService();
     } else {
-      // viewModel.fetchData();
+      await viewModel.fetchDataAndStopService();
     }
   }
 
@@ -33,8 +34,15 @@ class HomeVU extends StackedView<HomeVM> {
           padding: const EdgeInsets.only(left: 12),
           child: Image.asset('assets/images/companylogo.png'),
         ),
-        backgroundColor: const Color(0xFF2B313D),
-        actions: [appBarSwitch(context, viewModel)],
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        actions: [
+          // IconButton(
+          //     onPressed: onThemeToggle,
+          //     icon: Icon(Theme.of(context).brightness == Brightness.dark
+          //         ? Icons.light_mode
+          //         : Icons.dark_mode)),
+          appBarSwitch(context, viewModel)
+        ],
         title: Align(
           alignment: Alignment.centerLeft,
           child: Column(
@@ -55,7 +63,7 @@ class HomeVU extends StackedView<HomeVM> {
             ))
           :
           // RefreshIndicator(
-          // onRefresh: viewModel.fetchData(),
+          // onRefresh: viewModel.onRefreshFetchData(),
           // child:
           listOfServers(viewModel),
       // ),

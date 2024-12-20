@@ -12,11 +12,12 @@ Column appBarSwitch(BuildContext context, HomeVM viewModel) {
         child: Transform.scale(
           scale: 0.8,
           child: Switch(
-            value: viewModel.isOn,
+            value: viewModel.isServiceRunning,
             onChanged: (bool value) {
               viewModel.toggleSwitch();
-              if (viewModel.isOn) {
+              if (viewModel.isServiceRunning == true) {
                 // viewModel.startTimer();
+                viewModel.fetchDataAndStartService();
               } else {
                 // viewModel.stopTimer();
               }

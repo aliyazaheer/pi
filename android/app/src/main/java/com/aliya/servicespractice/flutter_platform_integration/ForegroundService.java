@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -157,11 +158,16 @@ public class ForegroundService extends Service {
             notificationManager.createNotificationChannel(channel);
         }
 
+        Intent notificationIntent=new Intent(this, MainActivity.class);
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent pendingIntent=PendingIntent.getActivity(this,0,notificationIntent,PendingIntent.FLAG_IMMUTABLE);
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             return new Notification.Builder(this, CHANNEL_ID)
                     .setContentTitle("Monitoring CHI Servers")
                     .setContentText("Initializing server monitoring...")
                     .setSmallIcon(R.drawable.companylogo)
+                    .setContentIntent(pendingIntent)
                     .build();
         }
         return null;
@@ -172,12 +178,17 @@ public class ForegroundService extends Service {
 
         String updatedContentText = onlineServers + " of " + totalServers + " Online";
 
+        Intent notificationIntent=new Intent(this, MainActivity.class);
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent pendingIntent=PendingIntent.getActivity(this,0,notificationIntent,PendingIntent.FLAG_IMMUTABLE);
+
         Notification notification = null;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             notification = new Notification.Builder(this, "ForegroundServiceChannel")
                     .setContentTitle("Monitoring CHI Servers")
                     .setContentText(updatedContentText)
                     .setSmallIcon(R.drawable.companylogo)
+                    .setContentIntent(pendingIntent)
                     .build();
 
             notificationManager.notify(1001, notification);

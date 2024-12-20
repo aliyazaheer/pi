@@ -39,8 +39,8 @@ class SharedPref {
     return [];
   }
 
-  static Future<void> saveSwitchState(bool isOn) async {
-    await prefs?.setBool('switchState', isOn);
+  static Future<void> saveSwitchState(bool isServiceRunning) async {
+    await prefs?.setBool('switchState', isServiceRunning);
   }
 
   static Future<bool?> getSwitchState() async {

@@ -14,7 +14,7 @@ class HomeVM extends BaseViewModel {
   ServerModel? serverModel;
   List<ServerDetails> serverDetails = [];
   List<ServerModel> serverModels = [];
-  bool isOn = true;
+  // bool isOn = true;
   bool isLoading = false;
   String? errorInFetchingData;
   bool isUp = false;
@@ -22,6 +22,8 @@ class HomeVM extends BaseViewModel {
 
   bool isRed = false;
   Timer? refreshTime;
+
+  bool isServiceRunning = false;
 
   static const methodChannel =
       MethodChannel('com.aliya.servicespractice/foreground');
@@ -53,6 +55,7 @@ class HomeVM extends BaseViewModel {
   }
 
   Future<void> initialize() async {
+    isLoading = true;
     await _startService();
     await _sendUrlToAndroid();
     _startListeningToApiStream();
@@ -60,7 +63,8 @@ class HomeVM extends BaseViewModel {
 
   Future<void> _sendUrlToAndroid() async {
     try {
-      await methodChannel.invokeMethod('sendUrls', {'urls': urls});
+      await methodChannel
+          .invokeMethod('startForegroundService', {'urls': urls});
       print("Sent URL: $urls");
     } catch (e) {
       print("Failed to send URL: $e");
@@ -69,12 +73,14 @@ class HomeVM extends BaseViewModel {
 
   Future<void> _startService() async {
     try {
-      final apisData = await methodChannel.invokeMethod('getData');
+      final apisData =
+          await methodChannel.invokeMethod('startForegroundService');
       if (apisData != null && apisData.isNotEmpty) {
         // serverModels.clear();
         for (String apiData in apisData) {
           serverModel = serverModelFromJson(apiData);
           serverModels.add(serverModel!);
+          isLoading = false;
         }
         notifyListeners();
         print("Received all responses from servers first time");
@@ -92,12 +98,12 @@ class HomeVM extends BaseViewModel {
         if (event is List) {
           try {
             serverModels.clear();
-
             for (var apiResponse in event) {
               if (apiResponse is String) {
                 var jsonMap = jsonDecode(apiResponse);
                 serverModel = ServerModel.fromJson(jsonMap);
                 serverModels.add(serverModel!);
+                isLoading = false;
               }
             }
             notifyListeners();
@@ -110,6 +116,7 @@ class HomeVM extends BaseViewModel {
       },
       onError: (error) {
         print("Stream error: $error");
+        isLoading = false;
       },
     );
   }
@@ -129,14 +136,34 @@ class HomeVM extends BaseViewModel {
   //   });
   // }
 
-  Future<void> fetchData() async {
+  Future<void> fetchDataAndStartService() async {
     try {
       final servers = await SharedPref.getSavedServerDetailsList();
       if (servers.isNotEmpty) {
+        urls.clear();
         for (var server in servers) {
-          addServerDetailsList(server);
+          await addServerDetailsList(server);
           addUrlsInList(server.serverUrl);
           // fetchServerModel(server.serverUrl);
+        }
+        // countOnlineUpdate();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error fetching server details: $e');
+    }
+  }
+
+  Future<void> fetchDataAndStopService() async {
+    try {
+      final servers = await SharedPref.getSavedServerDetailsList();
+      if (servers.isNotEmpty) {
+        urls.clear();
+        for (var server in servers) {
+          await addServerDetailsList(server);
+          // addUrlsInList(server.serverUrl);
+
+          fetchServerModel(server.serverUrl);
         }
         // countOnlineUpdate();
         notifyListeners();
@@ -157,15 +184,35 @@ class HomeVM extends BaseViewModel {
   // }
 
   toggleSwitch() async {
-    isOn = !isOn;
-    await SharedPref.saveSwitchState(isOn);
-    notifyListeners();
+    try {
+      if (isServiceRunning) {
+        await methodChannel.invokeMethod('stopForegroundService');
+        urls.clear();
+        // isLoading = false;
+        isServiceRunning = false;
+        print("Service Stopped");
+      } else {
+        isServiceRunning = true;
+        // isLoading = true;
+        await _startService();
+        await _sendUrlToAndroid();
+        _startListeningToApiStream();
+        // await fetchDataAndStartService();
+        notifyListeners();
+        print("Service Started");
+      }
+      // isServiceRunning = !isServiceRunning;
+      await SharedPref.saveSwitchState(isServiceRunning);
+      notifyListeners();
+    } on PlatformException catch (e) {
+      print("Failed to toggle service: ${e.message}");
+    }
   }
 
   initializeSwitchState() async {
-    isOn = (await SharedPref.getSwitchState()) ?? true;
+    isServiceRunning = (await SharedPref.getSwitchState()) ?? true;
     // isOn ??= true;
-    debugPrint('+++isOn =   $isOn +++');
+    debugPrint('+++isServerRunning =   $isServiceRunning +++');
     notifyListeners();
   }
 
@@ -183,53 +230,71 @@ class HomeVM extends BaseViewModel {
     notifyListeners();
   }
 
-  // fetchServerModel(String serverUrl) async {
-  //   isLoading = true;
-  //   errorInFetchingData = null;
-  //   notifyListeners();
-  //   try {
-  //     if (!serverUrl.startsWith('https://')) {
-  //       serverUrl = 'https://$serverUrl';
-  //     }
-  //     serverUrl = '$serverUrl/rms/v1/serverHealth';
-  //     final response = await http.get(Uri.parse(serverUrl));
-  //     debugPrint(serverUrl);
+  fetchServerModel(String serverUrl) async {
+    isLoading = true;
+    errorInFetchingData = null;
+    notifyListeners();
+    try {
+      if (!serverUrl.startsWith('https://')) {
+        serverUrl = 'https://$serverUrl';
+      }
+      serverUrl = '$serverUrl/rms/v1/serverHealth';
+      final response = await http.get(Uri.parse(serverUrl));
+      debugPrint(serverUrl);
 
-  //     if (response.statusCode == 200) {
-  //       serverModel = serverModelFromJson(response.body);
-  //       notifyListeners();
-  //       return serverModel;
-  //     }
-  //   } catch (e) {
-  //     errorInFetchingData = "Failed to fetch server data";
-  //     debugPrint("Failed to fetch server data");
-  //     // Fluttertoast.showToast(msg: errorInFetchingData!);
-  //     serverModel = null;
-  //   } finally {
-  //     isLoading = false;
-  //     notifyListeners();
-  //   }
-  // }
+      if (response.statusCode == 200) {
+        serverModel = serverModelFromJson(response.body);
+        notifyListeners();
+        return serverModel;
+      }
+    } catch (e) {
+      errorInFetchingData = "Failed to fetch server data";
+      debugPrint("Failed to fetch server data");
+      // Fluttertoast.showToast(msg: errorInFetchingData!);
+      serverModel = null;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
 
-  // Future<void> handleRefresh() async {
-  //   if (isLoading) return;
-  //   isLoading = true;
-  //   final servers = await SharedPref.getSavedServerDetailsList();
-  //   try {
-  //     if (servers.isNotEmpty) {
-  //       for (var server in servers) {
-  //         await SharedPref.saveServerDetailsList(servers);
-  //         await fetchServerModel(server.serverUrl);
-  //         notifyListeners();
-  //       }
-  //     } else {
-  //       // Fluttertoast.showToast(msg: "No server to refresh");
-  //     }
-  //   } catch (e) {
-  //     // Fluttertoast.showToast(msg: "Failed to refresh server data");
-  //   } finally {
-  //     isLoading = false;
-  //     notifyListeners();
-  //   }
-  // }
+  Future<void> handleRefresh() async {
+    if (isLoading) return;
+    isLoading = true;
+    final servers = await SharedPref.getSavedServerDetailsList();
+    try {
+      if (servers.isNotEmpty) {
+        for (var server in servers) {
+          await SharedPref.saveServerDetailsList(servers);
+          await fetchServerModel(server.serverUrl);
+          notifyListeners();
+        }
+      } else {
+        // Fluttertoast.showToast(msg: "No server to refresh");
+      }
+    } catch (e) {
+      // Fluttertoast.showToast(msg: "Failed to refresh server data");
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  onRefreshFetchData() async {
+    try {
+      final servers = await SharedPref.getSavedServerDetailsList();
+      if (servers.isNotEmpty) {
+        urls.clear();
+        for (var server in servers) {
+          await addServerDetailsList(server);
+          fetchServerModel(server.serverUrl);
+          // fetchServerModel(server.serverUrl);
+        }
+        // countOnlineUpdate();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error fetching server details: $e');
+    }
+  }
 }

@@ -27,7 +27,7 @@ class DetailPageVM extends BaseViewModel {
   // }
 
   void startTimer(Function fetchData) {
-    refreshTime = Timer.periodic(Duration(seconds: 5), (timer) {
+    refreshTime = Timer.periodic(Duration(seconds: 10), (timer) {
       fetchData();
     });
   }

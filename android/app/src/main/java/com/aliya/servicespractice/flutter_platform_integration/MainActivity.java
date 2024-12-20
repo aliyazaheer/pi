@@ -27,6 +27,7 @@ public class MainActivity extends FlutterActivity {
     private static final String TAG = "MainActivity";
     private static final String METHOD_CHANNEL = "com.aliya.servicespractice/foreground";
     private static final String EVENT_CHANNEL = "com.aliya.servicespractice/counterStream";
+//    private static final String EVENT_CHANNEL_TO_STOP_SERVICE = "com.aliya.servicespractice/stopService";
     private EventChannel.EventSink eventSink;
 
     @SuppressLint("NewApi")
@@ -51,7 +52,7 @@ public class MainActivity extends FlutterActivity {
         // Set up MethodChannel
         new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), METHOD_CHANNEL)
                 .setMethodCallHandler((call, result) -> {
-                    if (call.method.equals("sendUrls")) {
+                    if (call.method.equals("startForegroundService")) {
                         List<String> urls = call.argument("urls");
                         Log.e(TAG, "Got URLs in MainActivity: " + urls);
 
@@ -65,7 +66,13 @@ public class MainActivity extends FlutterActivity {
                         } else {
                             result.error("INVALID_ARGUMENT", "URLs are null", null);
                         }
-                    } else {
+                    } else if (call.method.equals("stopForegroundService")) {
+                        Intent serviceIntent = new Intent(this, ForegroundService.class);
+                        stopService(serviceIntent);
+                        result.success("Stopped Foreground Service");
+                    }
+
+                    else {
                         result.notImplemented();
                     }
                 });
