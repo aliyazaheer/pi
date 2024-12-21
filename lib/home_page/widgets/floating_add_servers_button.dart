@@ -13,6 +13,7 @@ FloatingActionButton floatingAddServerButton(
       final result = await Navigator.push(context,
           MaterialPageRoute(builder: (context) => const AddServerVU()));
       if (result != null && result is ServerDetails) {
+       
         await viewModel.addServerDetails(result);
         await SharedPref.saveServerDetailsList(viewModel.serverDetails);
         await viewModel.addUrlsInList(result.serverUrl);

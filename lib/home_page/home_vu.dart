@@ -13,7 +13,7 @@ class HomeVU extends StackedView<HomeVM> {
   final VoidCallback onThemeToggle;
   final ServerDetails? serverDetails;
 
-  HomeVU({super.key, this.serverDetails, required this.onThemeToggle});
+  const HomeVU({super.key, this.serverDetails, required this.onThemeToggle});
   @override
   Future<void> onViewModelReady(HomeVM viewModel) async {
     super.onViewModelReady(viewModel);

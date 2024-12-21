@@ -4,6 +4,8 @@ import 'package:flutter_platform_integration/prac/prac_vm.dart';
 import 'package:stacked/stacked.dart';
 
 class PracVU extends StackedView<PracVM> {
+  const PracVU({super.key});
+
   @override
   void onViewModelReady(PracVM viewModel) {
     super.onViewModelReady(viewModel);
@@ -26,9 +28,9 @@ class PracVU extends StackedView<PracVM> {
                   'SERVER ${index + 1}',
                   style: const TextStyle(fontSize: 20),
                 ),
-                Text(
+                const Text(
                   'MEMORY %AGE',
-                  style: const TextStyle(fontSize: 20),
+                  style: TextStyle(fontSize: 20),
                 ),
                 Text(
                   viewModel.serverModels.isNotEmpty &&

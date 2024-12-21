@@ -11,7 +11,7 @@ Padding headingOfCpuMemoryAndDisksCards( {
         children: [
           Text(
             textOfHeading,
-            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20),
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20),
           ),
           const Spacer(),
           viewModel.serverModel == null

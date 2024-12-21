@@ -12,7 +12,7 @@ Card disksCard(DetailPageVM viewModel) {
         children: [
           Column(
             children: viewModel.serverModel == null
-                ? [Text('-')]
+                ? [const Text('-')]
                 : viewModel.serverModel!.disk.map((disk) {
                     double diskUsage =
                         viewModel.getDiskUsage(disk.used, disk.total);

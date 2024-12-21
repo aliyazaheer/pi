@@ -22,6 +22,10 @@ class HomeVM extends BaseViewModel {
 
   bool isRed = false;
   Timer? refreshTime;
+  Timer? lastResponseTime;
+  int counter = 0;
+  String justNow = 'Just Now';
+  String countSec = '';
 
   bool isServiceRunning = false;
 
@@ -62,6 +66,10 @@ class HomeVM extends BaseViewModel {
   }
 
   Future<void> _sendUrlToAndroid() async {
+    if (urls.isEmpty) {
+      print("No URLs to send.");
+      return;
+    }
     try {
       await methodChannel
           .invokeMethod('startForegroundService', {'urls': urls});
@@ -107,6 +115,7 @@ class HomeVM extends BaseViewModel {
               }
             }
             notifyListeners();
+            startTimer();
           } catch (e) {
             print("Error parsing API response: $e");
           }
@@ -121,13 +130,45 @@ class HomeVM extends BaseViewModel {
     );
   }
 
+  // Function to start or reset the timer
+  void startTimer() {
+    // If a timer is already running, cancel it first
+    lastResponseTime?.cancel();
+    counter = 0; // Reset the counter to 0
+
+    // Start a new timer that ticks every second
+    lastResponseTime = Timer.periodic(Duration(seconds: 1), (timer) {
+      counter++; // Increment the counter every second
+      countSec = '${counter} Sec';
+      notifyListeners();
+      print("Timer: $counter seconds");
+
+      // Optionally, you can perform other actions each second
+      // For example, notifyListeners() if you want to update the UI
+    });
+  }
+
+  // Optionally, to stop the timer explicitly when you're done
+  void stopTimer() {
+    lastResponseTime?.cancel();
+  }
+
+  updateAndroidAboutUrls(int index) async {
+    // Update the Android service with new URLs
+    if (isServiceRunning) {
+      await methodChannel.invokeMethod('updateServiceUrls', {'urls': urls});
+      serverModels.removeAt(index); // Remove the corresponding server model
+    }
+    notifyListeners();
+  }
+
   countOnlineUpdate() {
-    countOnline == serverDetails.length ? countOnline = 0 : countOnline;
+    countOnline >= serverDetails.length ? countOnline = 0 : countOnline;
     serverModel != null ? countOnline++ : countOnline = countOnline;
     debugPrint(
-        '+++++++++++ Count online = ${countOnline} +++++ ${serverDetails.length}');
+        '+++++++++++ Count online = $countOnline +++++ ${serverDetails.length}');
     countOnline < serverDetails.length ? isRed = true : isRed = false;
-    print('================= $isRed');
+    print('========isRed========= $isRed');
   }
 
   // void startTimer() {
@@ -163,7 +204,7 @@ class HomeVM extends BaseViewModel {
           await addServerDetailsList(server);
           // addUrlsInList(server.serverUrl);
 
-          fetchServerModel(server.serverUrl);
+          // fetchServerModel(server.serverUrl);
         }
         // countOnlineUpdate();
         notifyListeners();
@@ -183,29 +224,75 @@ class HomeVM extends BaseViewModel {
   //   super.dispose();
   // }
 
+  // toggleSwitch() async {
+  //   try {
+  //     if (isServiceRunning) {
+  //       await methodChannel.invokeMethod('stopForegroundService');
+  //       urls.clear();
+  //       isLoading = false;
+  //       print("Service Stopped");
+  //     } else {
+  //       isLoading = true;
+  //       try {
+  //         final servers = await SharedPref.getSavedServerDetailsList();
+  //         if (servers.isNotEmpty) {
+  //           urls.clear();
+  //           for (var server in servers) {
+  //             addUrlsInList(server.serverUrl);
+  //           }
+  //           notifyListeners();
+  //         }
+  //       } catch (e) {
+  //         debugPrint('Error fetching server details: $e');
+  //       }
+  //       notifyListeners();
+  //       print("Service Started");
+  //     }
+  //     isServiceRunning = !isServiceRunning;
+  //     await SharedPref.saveSwitchState(isServiceRunning);
+  //     notifyListeners();
+  //   } on PlatformException catch (e) {
+  //     print("Failed to toggle service: ${e.message}");
+  //   }
+  // }
   toggleSwitch() async {
     try {
       if (isServiceRunning) {
+        // Stop the service
         await methodChannel.invokeMethod('stopForegroundService');
+        serverModels.clear(); // Clear existing data
         urls.clear();
-        // isLoading = false;
-        isServiceRunning = false;
+        isLoading = false;
         print("Service Stopped");
       } else {
-        isServiceRunning = true;
-        // isLoading = true;
-        await _startService();
-        await _sendUrlToAndroid();
-        _startListeningToApiStream();
-        // await fetchDataAndStartService();
-        notifyListeners();
+        isLoading = true;
+        try {
+          final servers = await SharedPref.getSavedServerDetailsList();
+          if (servers.isNotEmpty) {
+            urls.clear();
+            serverModels.clear(); // Clear any stale data
+            for (var server in servers) {
+              await addServerDetailsList(server);
+              addUrlsInList(server.serverUrl);
+            }
+            // Explicitly request service restart
+            await methodChannel
+                .invokeMethod('restartForegroundService', {'urls': urls});
+            _startListeningToApiStream(); // Reconnect to event stream
+          }
+        } catch (e) {
+          debugPrint('Error fetching server details: $e');
+          isLoading = false;
+        }
         print("Service Started");
       }
-      // isServiceRunning = !isServiceRunning;
+      isServiceRunning = !isServiceRunning;
       await SharedPref.saveSwitchState(isServiceRunning);
       notifyListeners();
     } on PlatformException catch (e) {
       print("Failed to toggle service: ${e.message}");
+      isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -258,43 +345,43 @@ class HomeVM extends BaseViewModel {
     }
   }
 
-  Future<void> handleRefresh() async {
-    if (isLoading) return;
-    isLoading = true;
-    final servers = await SharedPref.getSavedServerDetailsList();
-    try {
-      if (servers.isNotEmpty) {
-        for (var server in servers) {
-          await SharedPref.saveServerDetailsList(servers);
-          await fetchServerModel(server.serverUrl);
-          notifyListeners();
-        }
-      } else {
-        // Fluttertoast.showToast(msg: "No server to refresh");
-      }
-    } catch (e) {
-      // Fluttertoast.showToast(msg: "Failed to refresh server data");
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
-  }
+  // Future<void> handleRefresh() async {
+  //   if (isLoading) return;
+  //   isLoading = true;
+  //   final servers = await SharedPref.getSavedServerDetailsList();
+  //   try {
+  //     if (servers.isNotEmpty) {
+  //       for (var server in servers) {
+  //         await SharedPref.saveServerDetailsList(servers);
+  //         await fetchServerModel(server.serverUrl);
+  //         notifyListeners();
+  //       }
+  //     } else {
+  //       // Fluttertoast.showToast(msg: "No server to refresh");
+  //     }
+  //   } catch (e) {
+  //     // Fluttertoast.showToast(msg: "Failed to refresh server data");
+  //   } finally {
+  //     isLoading = false;
+  //     notifyListeners();
+  //   }
+  // }
 
-  onRefreshFetchData() async {
-    try {
-      final servers = await SharedPref.getSavedServerDetailsList();
-      if (servers.isNotEmpty) {
-        urls.clear();
-        for (var server in servers) {
-          await addServerDetailsList(server);
-          fetchServerModel(server.serverUrl);
-          // fetchServerModel(server.serverUrl);
-        }
-        // countOnlineUpdate();
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('Error fetching server details: $e');
-    }
-  }
+  // onRefreshFetchData() async {
+  //   try {
+  //     final servers = await SharedPref.getSavedServerDetailsList();
+  //     if (servers.isNotEmpty) {
+  //       urls.clear();
+  //       for (var server in servers) {
+  //         await addServerDetailsList(server);
+  //         fetchServerModel(server.serverUrl);
+  //         // fetchServerModel(server.serverUrl);
+  //       }
+  //       // countOnlineUpdate();
+  //       notifyListeners();
+  //     }
+  //   } catch (e) {
+  //     debugPrint('Error fetching server details: $e');
+  //   }
+  // }
 }

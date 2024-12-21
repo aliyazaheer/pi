@@ -19,11 +19,13 @@ PopupMenuButton<String> popUpMenuButtonFunction(
         if (updatedServer != null && updatedServer is ServerDetails) {
           viewModel.serverDetails[index] = updatedServer;
           await SharedPref.saveServerDetailsList(viewModel.serverDetails);
+          viewModel.updateAndroidAboutUrls(index);
           viewModel.notifyListeners();
         }
       } else if (value == 'Delete') {
         viewModel.serverDetails.removeAt(index);
         await SharedPref.saveServerDetailsList(viewModel.serverDetails);
+        viewModel.updateAndroidAboutUrls(index);
         viewModel.notifyListeners();
       }
     },

@@ -36,12 +36,29 @@ public class MainActivity extends FlutterActivity {
         super.onCreate(savedInstanceState);
 
         // Start the ForegroundService
-        Intent serviceIntent = new Intent(this, ForegroundService.class);
-        startService(serviceIntent);
+        if (!isServiceRunning(this, ForegroundService.class)) {
+            Intent serviceIntent = new Intent(this, ForegroundService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent);
+            } else {
+                startService(serviceIntent);
+            }
+        }
+
 
         // Register the receiver for API data updates
         IntentFilter filter = new IntentFilter("com.aliya.TO_GET_API_DATA");
         registerReceiver(dataUpdateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+    }
+    private boolean isServiceRunning(Context context, Class<?> serviceClass) {
+        android.app.ActivityManager manager =
+                (android.app.ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        for (android.app.ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -49,33 +66,101 @@ public class MainActivity extends FlutterActivity {
         super.configureFlutterEngine(flutterEngine);
         GeneratedPluginRegistrant.registerWith(flutterEngine);
 
-        // Set up MethodChannel
         new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), METHOD_CHANNEL)
                 .setMethodCallHandler((call, result) -> {
-                    if (call.method.equals("startForegroundService")) {
-                        List<String> urls = call.argument("urls");
-                        Log.e(TAG, "Got URLs in MainActivity: " + urls);
+                    switch (call.method) {
+                        case "startForegroundService":
+                            List<String> urls = call.argument("urls");
+                            Log.e(TAG, "Got URLs in MainActivity: " + urls);
 
-                        if (urls != null) {
-                            // Send the updated URLs to ForegroundService
-                            Intent intent = new Intent("com.aliya.SEND_URL");
-                            intent.putStringArrayListExtra("urls", new ArrayList<>(urls));
-                            sendBroadcast(intent);
-                            Log.e(TAG, "Broadcast sent with URLs: " + urls);
-                            result.success(null);
-                        } else {
-                            result.error("INVALID_ARGUMENT", "URLs are null", null);
-                        }
-                    } else if (call.method.equals("stopForegroundService")) {
-                        Intent serviceIntent = new Intent(this, ForegroundService.class);
-                        stopService(serviceIntent);
-                        result.success("Stopped Foreground Service");
-                    }
+                            if (urls != null) {
+                                Intent intent = new Intent("com.aliya.SEND_URL");
+                                intent.putStringArrayListExtra("urls", new ArrayList<>(urls));
+                                sendBroadcast(intent);
+                                Log.e(TAG, "Broadcast sent with URLs: " + urls);
+                                result.success(null);
+                            } else {
+                                result.error("INVALID_ARGUMENT", "URLs are null", null);
+                            }
+                            break;
 
-                    else {
-                        result.notImplemented();
+                        case "stopForegroundService":
+                            Intent stopIntent = new Intent(this, ForegroundService.class);
+                            stopService(stopIntent);
+                            result.success("Stopped Foreground Service");
+                            break;
+
+                        case "restartForegroundService":
+                            // First ensure the service is stopped
+                            stopService(new Intent(this, ForegroundService.class));
+
+                            // Start the service again
+                            Intent serviceIntent = new Intent(this, ForegroundService.class);
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                startForegroundService(serviceIntent);
+                            } else {
+                                startService(serviceIntent);
+                            }
+
+                            // Handle URLs if provided
+                            List<String> newUrls = call.argument("urls");
+                            if (newUrls != null) {
+                                Intent urlIntent = new Intent("com.aliya.SEND_URL");
+                                urlIntent.putStringArrayListExtra("urls", new ArrayList<>(newUrls));
+                                sendBroadcast(urlIntent);
+                            }
+                            result.success("Service Restarted");
+                            break;
+                         case "updateServiceUrls":
+                            List<String> updatedUrls = call.argument("urls");
+                            if (updatedUrls != null) {
+                                // Send updated URLs to service
+                                Intent updateIntent = new Intent("com.aliya.SEND_URL");
+                                updateIntent.putStringArrayListExtra("urls", new ArrayList<>(updatedUrls));
+                                sendBroadcast(updateIntent);
+
+                                // Force service to process new URLs immediately
+                                Intent refreshIntent = new Intent("com.aliya.REFRESH_SERVICE");
+                                sendBroadcast(refreshIntent);
+
+                                result.success("URLs updated");
+                            } else {
+                                result.error("INVALID_ARGUMENT", "Updated URLs are null", null);
+                            }
+                            break;
+
+                        default:
+                            result.notImplemented();
+                            break;
                     }
                 });
+        // Set up MethodChannel
+//        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), METHOD_CHANNEL)
+//                .setMethodCallHandler((call, result) -> {
+//                    if (call.method.equals("startForegroundService")) {
+//                        List<String> urls = call.argument("urls");
+//                        Log.e(TAG, "Got URLs in MainActivity: " + urls);
+//
+//                        if (urls != null) {
+//                            // Send the updated URLs to ForegroundService
+//                            Intent intent = new Intent("com.aliya.SEND_URL");
+//                            intent.putStringArrayListExtra("urls", new ArrayList<>(urls));
+//                            sendBroadcast(intent);
+//                            Log.e(TAG, "Broadcast sent with URLs: " + urls);
+//                            result.success(null);
+//                        } else {
+//                            result.error("INVALID_ARGUMENT", "URLs are null", null);
+//                        }
+//                    } else if (call.method.equals("stopForegroundService")) {
+//                        Intent serviceIntent = new Intent(this, ForegroundService.class);
+//                        stopService(serviceIntent);
+//                        result.success("Stopped Foreground Service");
+//                    }
+//
+//                    else {
+//                        result.notImplemented();
+//                    }
+//                });
 
         // Set up EventChannel
         new EventChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), EVENT_CHANNEL)
@@ -120,6 +205,7 @@ public class MainActivity extends FlutterActivity {
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(dataUpdateReceiver);
+
     }
 }
 

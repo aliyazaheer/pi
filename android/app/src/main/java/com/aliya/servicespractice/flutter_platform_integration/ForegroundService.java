@@ -201,9 +201,9 @@ public class ForegroundService extends Service {
         if (handler != null) {
             handler.removeCallbacks(runnable);
         }
-        if (urlUpdateReceiver != null) {
-            unregisterReceiver(urlUpdateReceiver);
-        }
+//        if (urlUpdateReceiver != null) {
+//            unregisterReceiver(urlUpdateReceiver);
+//        }
         totalServers = 0;
         onlineServers = 0;
         apisResponse.clear();
