@@ -48,4 +48,19 @@ class SharedPref {
     debugPrint('+++++++++++++ $switchState++++++++++++++++++++');
     return switchState;
   }
+
+  static Future<void> saveTheme(ThemeMode theme) async {
+    await prefs?.setString('theme', theme.toString());
+  }
+
+  static Future<ThemeMode> getTheme() async {
+    final themeString = prefs?.getString('theme');
+    if (themeString == ThemeMode.dark.toString()) {
+      return ThemeMode.dark;
+    } else if (themeString == ThemeMode.light.toString()) {
+      return ThemeMode.light;
+    }
+    debugPrint('+++++++++++++ $themeString++++++++++++++++++++');
+    return ThemeMode.system;
+  }
 }

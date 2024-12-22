@@ -8,12 +8,12 @@ FloatingActionButton floatingAddServerButton(
     BuildContext context, HomeVM viewModel) {
   return FloatingActionButton(
     backgroundColor: const Color(0xFF41A3FF),
+    foregroundColor: const Color(0xFFF5F5F5),
     shape: const CircleBorder(eccentricity: 0.0),
     onPressed: () async {
       final result = await Navigator.push(context,
           MaterialPageRoute(builder: (context) => const AddServerVU()));
       if (result != null && result is ServerDetails) {
-       
         await viewModel.addServerDetails(result);
         await SharedPref.saveServerDetailsList(viewModel.serverDetails);
         await viewModel.addUrlsInList(result.serverUrl);

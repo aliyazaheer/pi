@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import '../detail_page_vm.dart';
 import 'bar_chart_of_cpu.dart';
 
-Widget cpuCard(DetailPageVM viewModel) {
+Widget cpuCard(BuildContext context, DetailPageVM viewModel) {
   return Card(
     elevation: 10,
-    color: const Color(0xFF222832),
+    color: Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF2B313D)
+        : const Color(0xFFF5F5F5),
     child: Column(
       children: [
         Row(
@@ -22,7 +24,7 @@ Widget cpuCard(DetailPageVM viewModel) {
                             'Loading...',
                             style: TextStyle(color: Color(0xFF41A3FF)),
                           ))
-                        : barChartOfCpu(viewModel)),
+                        : barChartOfCpu(context,viewModel)),
               ),
             ),
           ],

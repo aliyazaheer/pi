@@ -12,10 +12,13 @@ class MyApp extends StatelessWidget {
   MyApp({super.key});
 
   final ValueNotifier<ThemeMode> themeModeNotifier =
-      ValueNotifier(ThemeMode.dark);
+      ValueNotifier(ThemeMode.system);
 
   @override
   Widget build(BuildContext context) {
+    SharedPref.getTheme().then((theme) {
+      themeModeNotifier.value = theme; // Update the theme once loaded
+    });
     return ValueListenableBuilder<ThemeMode>(
         valueListenable: themeModeNotifier,
         builder: (context, themeMode, child) {
@@ -50,11 +53,16 @@ class MyApp extends StatelessWidget {
             ),
             themeMode: themeMode,
             home: HomeVU(
-              onThemeToggle: () {
-                themeModeNotifier.value =
-                    themeModeNotifier.value == ThemeMode.dark
-                        ? ThemeMode.light
-                        : ThemeMode.dark;
+              onThemeToggle: () async {
+                final newThemeMode = themeModeNotifier.value == ThemeMode.dark
+                    ? ThemeMode.light
+                    : ThemeMode.dark;
+                themeModeNotifier.value = newThemeMode;
+                await SharedPref.saveTheme(newThemeMode);
+                // themeModeNotifier.value =
+                //     themeModeNotifier.value == ThemeMode.dark
+                //         ? ThemeMode.light
+                //         : ThemeMode.dark;
               },
             ),
             // home: PracVU(),

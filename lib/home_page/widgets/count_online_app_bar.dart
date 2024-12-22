@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../home_vm.dart';
 
-Row countOnlineOfAppBar(HomeVM viewModel) {
+Row countOnlineOfAppBar(BuildContext context, HomeVM viewModel) {
   return Row(
     children: [
       Container(
@@ -10,7 +10,9 @@ Row countOnlineOfAppBar(HomeVM viewModel) {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             color: viewModel.isLoading
-                ? Colors.white
+                ? Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFFF5F5F5)
+                    :  const Color(0xFF2B313D)
                 : viewModel.isRed
                     ? Colors.red
                     : Colors.green,

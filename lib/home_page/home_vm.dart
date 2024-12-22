@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // import 'package:fluttertoast/fluttertoast.dart';
 import 'package:stacked/stacked.dart';
-import 'package:http/http.dart' as http;
-
 import '../models/server_details.dart';
 import '../models/server_model.dart';
 import '../shared_pref/shared_pref.dart';
@@ -31,6 +29,7 @@ class HomeVM extends BaseViewModel {
   List<String> apiResponses = [];
 
   bool isServiceRunning = false;
+  ThemeMode theme = ThemeMode.dark;
 
   static const methodChannel =
       MethodChannel('com.aliya.servicespractice/foreground');
@@ -69,7 +68,7 @@ class HomeVM extends BaseViewModel {
       serverUrl = 'https://$serverUrl';
     }
     serverUrl = '$serverUrl/rms/v1/serverHealth';
-    print(serverUrl);
+    debugPrint(serverUrl);
     debugPrint(serverUrl);
     urls.add(serverUrl);
     await initialize();
@@ -84,15 +83,15 @@ class HomeVM extends BaseViewModel {
 
   Future<void> _sendUrlToAndroid() async {
     if (urls.isEmpty) {
-      print("No URLs to send.");
+      debugPrint("No URLs to send.");
       return;
     }
     try {
       await methodChannel
           .invokeMethod('startForegroundService', {'urls': urls});
-      print("Sent URL: $urls");
+      debugPrint("Sent URL: $urls");
     } catch (e) {
-      print("Failed to send URL: $e");
+      debugPrint("Failed to send URL: $e");
     }
   }
 
@@ -108,44 +107,15 @@ class HomeVM extends BaseViewModel {
           isLoading = false;
         }
         notifyListeners();
-        print("Received all responses from servers first time");
+        debugPrint("Received all responses from servers first time");
       } else {
-        print("No data received from the service.");
+        debugPrint("No data received from the service.");
       }
     } catch (e) {
-      print("Failed to get data: $e");
+      debugPrint("Failed to get data: $e");
     }
   }
 
-  // void _startListeningToApiStream() {
-  //   eventChannel.receiveBroadcastStream().listen(
-  //     (event) {
-  //       if (event is List) {
-  //         try {
-  //           serverModels.clear();
-  //           for (var apiResponse in event) {
-  //             if (apiResponse is String) {
-  //               var jsonMap = jsonDecode(apiResponse);
-  //               serverModel = ServerModel.fromJson(jsonMap);
-  //               serverModels.add(serverModel!);
-  //               isLoading = false;
-  //             }
-  //           }
-  //           notifyListeners();
-  //           startTimer();
-  //         } catch (e) {
-  //           print("Error parsing API response: $e");
-  //         }
-  //       } else {
-  //         print("Invalid event type: ${event.runtimeType}");
-  //       }
-  //     },
-  //     onError: (error) {
-  //       print("Stream error: $error");
-  //       isLoading = false;
-  //     },
-  //   );
-  // }
   void _startListeningToApiStream() {
     eventChannel.receiveBroadcastStream().listen(
       (event) {
@@ -163,17 +133,17 @@ class HomeVM extends BaseViewModel {
             isLoading = false;
             notifyListeners();
             debugPrint("Total Servers: $totalServers");
-            debugPrint("hhhhhhhhhhhhhhh== Online Servers: $onlineServers");
+            debugPrint("Online Servers: $onlineServers");
             startTimer();
           } catch (e) {
-            print("Error parsing API response: $e");
+            debugPrint("Error parsing API response: $e");
           }
         } else {
-          print("Invalid event type: ${event.runtimeType}");
+          debugPrint("Invalid event type: ${event.runtimeType}");
         }
       },
       onError: (error) {
-        print("Stream error: $error");
+        debugPrint("Stream error: $error");
         isLoading = false;
       },
     );
@@ -182,11 +152,11 @@ class HomeVM extends BaseViewModel {
   void startTimer() {
     counter = 0;
     lastResponseTime?.cancel();
-    lastResponseTime = Timer.periodic(Duration(seconds: 1), (timer) {
+    lastResponseTime = Timer.periodic(const Duration(seconds: 1), (timer) {
       counter++;
-      countSec = '${counter} Sec';
+      countSec = '$counter Sec';
       notifyListeners();
-      print("Timer: $counter seconds");
+      debugPrint("Timer: $counter seconds");
     });
   }
 
@@ -195,7 +165,6 @@ class HomeVM extends BaseViewModel {
   }
 
   updateAndroidAboutUrls(int index) async {
-    // urls.clear();
     final servers = await SharedPref.getSavedServerDetailsList();
     if (servers.isNotEmpty) {
       urls.clear();
@@ -245,7 +214,6 @@ class HomeVM extends BaseViewModel {
         urls.clear();
         for (var server in servers) {
           await addServerDetailsList(server);
-          // fetchServerModel(server.serverUrl);
         }
         notifyListeners();
       }
@@ -254,83 +222,40 @@ class HomeVM extends BaseViewModel {
     }
   }
 
-  // void stopTimer() {
-  //   refreshTime?.cancel();
-  //   refreshTime = null;
-  // }
-
-  // void dispose() {
-  //   stopTimer();
-  //   super.dispose();
-  // }
-
-  // toggleSwitch() async {
-  //   try {
-  //     if (isServiceRunning) {
-  //       await methodChannel.invokeMethod('stopForegroundService');
-  //       urls.clear();
-  //       isLoading = false;
-  //       print("Service Stopped");
-  //     } else {
-  //       isLoading = true;
-  //       try {
-  //         final servers = await SharedPref.getSavedServerDetailsList();
-  //         if (servers.isNotEmpty) {
-  //           urls.clear();
-  //           for (var server in servers) {
-  //             addUrlsInList(server.serverUrl);
-  //           }
-  //           notifyListeners();
-  //         }
-  //       } catch (e) {
-  //         debugPrint('Error fetching server details: $e');
-  //       }
-  //       notifyListeners();
-  //       print("Service Started");
-  //     }
-  //     isServiceRunning = !isServiceRunning;
-  //     await SharedPref.saveSwitchState(isServiceRunning);
-  //     notifyListeners();
-  //   } on PlatformException catch (e) {
-  //     print("Failed to toggle service: ${e.message}");
-  //   }
-  // }
   toggleSwitch() async {
     try {
       if (isServiceRunning) {
-        // Stop the service
         await methodChannel.invokeMethod('stopForegroundService');
-        serverModels.clear(); // Clear existing data
+        serverModels.clear();
         urls.clear();
         isLoading = false;
-        print("Service Stopped");
+        debugPrint("Service Stopped");
       } else {
         isLoading = true;
         try {
           final servers = await SharedPref.getSavedServerDetailsList();
           if (servers.isNotEmpty) {
             urls.clear();
-            serverModels.clear(); // Clear any stale data
+            serverModels.clear();
             for (var server in servers) {
               await addServerDetailsList(server);
               addUrlsInList(server.serverUrl);
             }
-            // Explicitly request service restart
             await methodChannel
                 .invokeMethod('restartForegroundService', {'urls': urls});
-            _startListeningToApiStream(); // Reconnect to event stream
+            _startListeningToApiStream();
           }
         } catch (e) {
           debugPrint('Error fetching server details: $e');
           isLoading = false;
         }
-        print("Service Started");
+        debugPrint("Service Started");
       }
       isServiceRunning = !isServiceRunning;
       await SharedPref.saveSwitchState(isServiceRunning);
       notifyListeners();
     } on PlatformException catch (e) {
-      print("Failed to toggle service: ${e.message}");
+      debugPrint("Failed to toggle service: ${e.message}");
       isLoading = false;
       notifyListeners();
     }
@@ -340,6 +265,13 @@ class HomeVM extends BaseViewModel {
     isServiceRunning = (await SharedPref.getSwitchState()) ?? true;
     // isOn ??= true;
     debugPrint('+++isServerRunning =   $isServiceRunning +++');
+    notifyListeners();
+  }
+
+  initializeTheme() async {
+    theme = (await SharedPref.getTheme());
+    // isOn ??= true;
+    debugPrint('+++isDark =   $theme +++');
     notifyListeners();
   }
 

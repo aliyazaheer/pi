@@ -18,6 +18,7 @@ class HomeVU extends StackedView<HomeVM> {
   Future<void> onViewModelReady(HomeVM viewModel) async {
     super.onViewModelReady(viewModel);
     await viewModel.initializeSwitchState();
+    await viewModel.initializeTheme();
     await SharedPref.getSavedServerDetailsList();
     if (viewModel.isServiceRunning == true) {
       await viewModel.fetchDataAndStartService();
@@ -31,16 +32,17 @@ class HomeVU extends StackedView<HomeVM> {
     return Scaffold(
       appBar: AppBar(
         leading: Padding(
-          padding: const EdgeInsets.only(left: 12),
-          child: Image.asset('assets/images/companylogo.png'),
-        ),
+            padding: const EdgeInsets.only(left: 12),
+            child: Theme.of(context).brightness == Brightness.dark
+                ? Image.asset('assets/images/companylogo.png')
+                : Image.asset('assets/images/companylogodark.png')),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         actions: [
-          // IconButton(
-          //     onPressed: onThemeToggle,
-          //     icon: Icon(Theme.of(context).brightness == Brightness.dark
-          //         ? Icons.light_mode
-          //         : Icons.dark_mode)),
+          IconButton(
+              onPressed: onThemeToggle,
+              icon: Icon(Theme.of(context).brightness == Brightness.dark
+                  ? Icons.light_mode
+                  : Icons.dark_mode)),
           appBarSwitch(context, viewModel)
         ],
         title: Align(
@@ -50,7 +52,7 @@ class HomeVU extends StackedView<HomeVM> {
             children: [
               const Text('CHI SERVERS',
                   style: TextStyle(fontWeight: FontWeight.w900)),
-              countOnlineOfAppBar(viewModel)
+              countOnlineOfAppBar(context, viewModel)
             ],
           ),
         ),

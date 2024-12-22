@@ -6,7 +6,9 @@ import 'popup_menu_button.dart';
 Card cardsOfList(HomeVM viewModel, int index, BuildContext context) {
   return Card(
     elevation: 10,
-    color: const Color(0xFF222832),
+    color: Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF222832)
+        : const Color(0xFFF5F5F5),
     child: Padding(
       padding: const EdgeInsets.all(12.0),
       child: Column(
@@ -19,7 +21,9 @@ Card cardsOfList(HomeVM viewModel, int index, BuildContext context) {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
                     color: viewModel.isLoading
-                        ? Colors.white
+                        ? Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFFF5F5F5)
+                            : const Color(0xFF2B313D)
                         : viewModel.serverModel == null
                             ? Colors.red
                             : Colors.green,

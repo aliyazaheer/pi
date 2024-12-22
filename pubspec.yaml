@@ -39,6 +39,7 @@ dependencies:
   http: ^1.2.2
   shared_preferences: ^2.3.3
   fl_chart: ^0.69.2
+  fluttertoast: ^8.2.10
 
 dev_dependencies:
   flutter_test:
@@ -58,6 +59,7 @@ dev_dependencies:
 flutter:
   assets:
     - assets/images/companylogo.png
+    - assets/images/companylogodark.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

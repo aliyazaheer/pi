@@ -41,7 +41,9 @@ class DetailPageVU extends StackedView<DetailPageVM> {
     return Scaffold(
         appBar: AppBar(
           title: Text('${serverDetails?.serverName}'),
-          backgroundColor: const Color(0xFF2B313D),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF2B313D)
+              : const Color(0xFFF5F5F5),
         ),
         body: SingleChildScrollView(
             child: Column(children: [
@@ -58,7 +60,7 @@ class DetailPageVU extends StackedView<DetailPageVM> {
           paddingOfCards(
               viewModel: viewModel,
               glowOfCard: glowOfCard(
-                cardFunction: cpuCard(viewModel),
+                cardFunction: cpuCard(context, viewModel),
               )),
           spaceY(heightValue: 10),
           headingOfCpuMemoryAndDisksCards(
@@ -66,7 +68,7 @@ class DetailPageVU extends StackedView<DetailPageVM> {
           paddingOfCards(
               viewModel: viewModel,
               glowOfCard: glowOfCard(
-                cardFunction: memoryCard(viewModel),
+                cardFunction: memoryCard(context, viewModel),
               )),
           spaceY(heightValue: 10),
           headingOfCpuMemoryAndDisksCards(
@@ -74,7 +76,7 @@ class DetailPageVU extends StackedView<DetailPageVM> {
           paddingOfCards(
               viewModel: viewModel,
               glowOfCard: glowOfCard(
-                cardFunction: disksCard(viewModel),
+                cardFunction: disksCard(context, viewModel),
               )),
         ])));
   }

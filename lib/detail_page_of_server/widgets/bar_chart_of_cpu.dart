@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../detail_page_vm.dart';
 
-BarChart barChartOfCpu(DetailPageVM viewModel) {
+BarChart barChartOfCpu(BuildContext context, DetailPageVM viewModel) {
   return BarChart(BarChartData(
     maxY: viewModel.getHeightOfBars(),
     titlesData: FlTitlesData(
@@ -21,9 +21,11 @@ BarChart barChartOfCpu(DetailPageVM viewModel) {
             space: 10,
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 5,
-                  color: Colors.white,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFFF5F5F5)
+                      : const Color(0xFF2B313D),
                   fontWeight: FontWeight.w900),
             ),
           );

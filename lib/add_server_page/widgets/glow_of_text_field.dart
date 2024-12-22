@@ -2,10 +2,13 @@
 
 import 'package:flutter/material.dart';
 
-Container glowOfTextField({required Widget cardFunction}) {
+Container glowOfTextField(BuildContext context,
+    {required Widget cardFunction}) {
   return Container(
     decoration: BoxDecoration(
-      color: const Color(0xFF2B313D),
+      color: Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF2B313D)
+          : const Color(0xFFF5F5F5),
       borderRadius: BorderRadius.circular(15),
       boxShadow: [
         BoxShadow(

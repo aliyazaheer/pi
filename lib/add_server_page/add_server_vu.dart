@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 // import 'package:fluttertoast/fluttertoast.dart';
 import 'package:stacked/stacked.dart';
@@ -32,16 +31,19 @@ class AddServerVU extends StackedView<AddServerVM> {
         title: Text(serverDetails != null
             ? 'Editing ${serverDetails!.serverName}'
             : 'Add New Server'),
-        backgroundColor: const Color(0xFF2B313D),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF2B313D)
+            : const Color(0xFFF5F5F5),
       ),
       body: Padding(
           padding: const EdgeInsets.all(20.0),
           child: SingleChildScrollView(
             child: Column(
               children: [
-                glowOfCard(cardFunction: newServerDataCard(viewModel)),
+                glowOfCard(cardFunction: newServerDataCard(context, viewModel)),
                 spaceY(heightValue: 30),
                 glowOfTextField(
+                  context,
                   cardFunction: textField(
                     viewModel: viewModel,
                     hintTextOfField: 'Enter Server Name',
@@ -53,6 +55,7 @@ class AddServerVU extends StackedView<AddServerVM> {
                 ),
                 spaceY(heightValue: 30),
                 glowOfTextField(
+                  context,
                   cardFunction: textField(
                     viewModel: viewModel,
                     hintTextOfField: 'Enter URL e.g. dev.chitech.com',

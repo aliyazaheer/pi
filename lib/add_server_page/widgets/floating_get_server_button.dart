@@ -7,6 +7,7 @@ FloatingActionButton floatingGetServerButton(
     AddServerVM viewModel, BuildContext context) {
   return FloatingActionButton(
     backgroundColor: const Color(0xFF41A3FF),
+    foregroundColor: const Color(0xFFF5F5F5),
     shape: const CircleBorder(eccentricity: 0.0),
     onPressed: () {
       if (viewModel.serverModel == null) {
