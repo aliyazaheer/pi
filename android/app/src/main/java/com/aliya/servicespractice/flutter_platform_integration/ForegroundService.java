@@ -10,6 +10,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.media.AudioAttributes;
+import android.media.MediaPlayer;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -38,6 +42,11 @@ public class ForegroundService extends Service {
     private int totalServers = 0;
     private int onlineServers = 0;
     private static List<String> apisResponse = new ArrayList<>();
+    private static final String ERROR_CHANNEL_ID = "ServerErrorChannel";
+    private static final int ERROR_NOTIFICATION_ID = 1002;
+    private boolean isErrorNotificationShowing = false;
+
+
 
     @SuppressLint("NewApi")
     @Override
@@ -65,7 +74,136 @@ public class ForegroundService extends Service {
 
         // Start foreground notification
         startForeground(1001, createNotification());
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel errorChannel = new NotificationChannel(
+                    ERROR_CHANNEL_ID,
+                    "Server Error Notifications",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+
+            // Get high-intensity alarm sound
+            Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+            if (alarmSound == null) {
+                alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+            }
+
+            AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .build();
+
+            errorChannel.setSound(alarmSound, audioAttributes);
+            errorChannel.enableVibration(true);
+            errorChannel.setVibrationPattern(new long[]{1000, 1000, 1000, 1000, 1000});
+            errorChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+
+            notificationManager.createNotificationChannel(errorChannel);
+        }
+
         return START_STICKY;
+    }
+
+
+    private void checkGoogleAndNotify() {
+        new Thread(() -> {
+            try {
+                URL googleUrl = new URL("https://www.google.com");
+                HttpURLConnection connection = (HttpURLConnection) googleUrl.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
+
+                int responseCode = connection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    // Google is accessible, show error notification
+                    showErrorNotification();
+                } else {
+                    Log.e(TAG, "Both servers and Google are inaccessible. Possible network issue.");
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error checking Google availability", e);
+            }
+        }).start();
+    }
+
+    private void showErrorNotification() {
+        if (isErrorNotificationShowing) return;
+
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this,
+                0,
+                notificationIntent,
+                PendingIntent.FLAG_IMMUTABLE
+        );
+
+        Notification notification;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // Modern Android version (Oreo and above)
+            notification = new Notification.Builder(this, ERROR_CHANNEL_ID)
+                    .setContentTitle("Server Error")
+                    .setContentText("One or more servers are not responding")
+                    .setSmallIcon(R.drawable.companylogo)
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(false)
+                    .setOngoing(true)
+                    .build();
+        } else {
+            // Legacy Android version (pre-Oreo)
+            Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+            if (alarmSound == null) {
+                alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+            }
+
+            notification = new Notification.Builder(this)
+                    .setContentTitle("Server Error")
+                    .setContentText("One or more servers are not responding")
+                    .setSmallIcon(R.drawable.companylogo)
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(false)
+                    .setOngoing(true)
+                    .setPriority(Notification.PRIORITY_MAX)
+                    .setDefaults(Notification.DEFAULT_ALL)
+                    .setSound(alarmSound)
+                    .setVibrate(new long[]{1000, 1000, 1000, 1000, 1000})
+                    .build();
+        }
+
+        // For Android O and above, sound and vibration are handled by the channel
+        // For pre-O devices, they're set in the notification itself
+        notification.flags |= Notification.FLAG_INSISTENT;
+
+        notificationManager.notify(ERROR_NOTIFICATION_ID, notification);
+        isErrorNotificationShowing = true;
+
+        // For Android O and above, play additional sound using MediaPlayer
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            playAlarmSound();
+        }
+    }
+
+    private void playAlarmSound() {
+        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        MediaPlayer mediaPlayer = MediaPlayer.create(getApplicationContext(), alarmSound);
+        if (mediaPlayer != null) {
+            mediaPlayer.setLooping(false);
+            mediaPlayer.start();
+            // Release the MediaPlayer after playing
+            mediaPlayer.setOnCompletionListener(mp -> {
+                mp.release();
+            });
+        }
+    }
+
+
+
+    private void removeErrorNotification() {
+        if (isErrorNotificationShowing) {
+            notificationManager.cancel(ERROR_NOTIFICATION_ID);
+            isErrorNotificationShowing = false;
+        }
     }
 
     private void processUrls() {
@@ -74,6 +212,9 @@ public class ForegroundService extends Service {
                 apisResponse.clear();
 //                totalServers = urls.size();
                 onlineServers = 0;
+                boolean hasError = false;
+
+
 
                 Log.e(TAG, "Processing URLs: " + urls);
 
@@ -108,14 +249,23 @@ public class ForegroundService extends Service {
                             Log.e("TAG","+++++++++++++++++Online Counter: " + onlineServers);
                             Log.e("TAG","++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"  );
                         } else {
+                            hasError = true;
                             Log.e(TAG, "Error code for " + urlString + ": " + responseCode);
                             apisResponse.add("Error: " + responseCode);
                         }
                     } catch (Exception e) {
+                        hasError = true;
                         Log.e(TAG, "Error hitting API for " + urlString, e);
                         apisResponse.add("Exception: " + e.getMessage());
                     }
                 }
+                if (hasError) {
+//                    checkGoogleAndNotify();
+                    showErrorNotification();
+                } else {
+                    removeErrorNotification();
+                }
+
 
                 // Send broadcast with updated data
                 Intent broadcastIntent = new Intent("com.aliya.TO_GET_API_DATA");
@@ -224,6 +374,7 @@ public class ForegroundService extends Service {
         totalServers = 0;
         onlineServers = 0;
         apisResponse.clear();
+        removeErrorNotification();
 
         // Update notification one final time before destroying
         updateNotification();
