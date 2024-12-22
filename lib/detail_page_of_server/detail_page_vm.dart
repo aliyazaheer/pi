@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:stacked/stacked.dart';
 import 'package:http/http.dart' as http;
 
@@ -52,7 +53,7 @@ class DetailPageVM extends BaseViewModel {
     } catch (e) {
       errorInFetchingData = "Failed to fetch server data";
       debugPrint("Failed to fetch server data");
-      // Fluttertoast.showToast(msg: errorInFetchingData!);
+      Fluttertoast.showToast(msg: errorInFetchingData!);
       serverModel = null;
     } finally {
       isLoading = false;

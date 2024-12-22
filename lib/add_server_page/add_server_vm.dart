@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-// import 'package:fluttertoast/fluttertoast.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:stacked/stacked.dart';
 
@@ -40,7 +40,7 @@ class AddServerVM extends BaseViewModel {
     } catch (e) {
       errorInFetchingData = "Failed to fetch server data";
       print("Failed to fetch server data");
-      // Fluttertoast.showToast(msg: errorInFetchingData!);
+      Fluttertoast.showToast(msg: errorInFetchingData!);
       serverModel = null;
     } finally {
       isLoading = false;
@@ -59,24 +59,24 @@ class AddServerVM extends BaseViewModel {
     if (isValidServerUrl(serverUrl)) {
       if (serverName.isEmpty || serverUrl.isEmpty) {
         debugPrint('field is empty....................');
-        // Fluttertoast.showToast(
-        //   msg: "Please fill all fields",
-        // );
+        Fluttertoast.showToast(
+          msg: "Please fill all fields",
+        );
         return;
       }
 
       await fetchServerModel(serverUrl);
       if (serverModel != null) {
         debugPrint('server data fetched...................');
-        // Fluttertoast.showToast(
-        //   msg: "Server data fetched successfully",
-        // );
+        Fluttertoast.showToast(
+          msg: "Server data fetched successfully",
+        );
         isUp = true;
       } else {
         debugPrint('no server data available...................');
-        // Fluttertoast.showToast(
-        //   msg: "No server data available for this URL",
-        // );
+        Fluttertoast.showToast(
+          msg: "No server data available for this URL",
+        );
       }
 
       notifyListeners();
@@ -92,4 +92,3 @@ class AddServerVM extends BaseViewModel {
     }
   }
 }
-//   'https://umair-stable.smartclinicpk.com/rms/v1/serverHealth'

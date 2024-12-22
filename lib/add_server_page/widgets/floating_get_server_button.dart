@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 import '../../models/server_details.dart';
 import '../add_server_vm.dart';
@@ -11,9 +12,9 @@ FloatingActionButton floatingGetServerButton(
     shape: const CircleBorder(eccentricity: 0.0),
     onPressed: () {
       if (viewModel.serverModel == null) {
-        // Fluttertoast.showToast(
-        //   msg: "No server details to add",
-        // );
+        Fluttertoast.showToast(
+          msg: "No server details to add",
+        );
         return;
       }
       Navigator.pop(

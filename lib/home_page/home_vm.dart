@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-// import 'package:fluttertoast/fluttertoast.dart';
 import 'package:stacked/stacked.dart';
 import '../models/server_details.dart';
 import '../models/server_model.dart';
@@ -295,7 +294,7 @@ class HomeVM extends BaseViewModel {
   //   } catch (e) {
   //     errorInFetchingData = "Failed to fetch server data";
   //     debugPrint("Failed to fetch server data");
-  //     // Fluttertoast.showToast(msg: errorInFetchingData!);
+  //      Fluttertoast.showToast(msg: errorInFetchingData!);
   //     serverModel = null;
   //   } finally {
   //     isLoading = false;
@@ -315,10 +314,10 @@ class HomeVM extends BaseViewModel {
   //         notifyListeners();
   //       }
   //     } else {
-  //       // Fluttertoast.showToast(msg: "No server to refresh");
+  //        Fluttertoast.showToast(msg: "No server to refresh");
   //     }
   //   } catch (e) {
-  //     // Fluttertoast.showToast(msg: "Failed to refresh server data");
+  //      Fluttertoast.showToast(msg: "Failed to refresh server data");
   //   } finally {
   //     isLoading = false;
   //     notifyListeners();
