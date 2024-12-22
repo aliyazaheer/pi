@@ -46,8 +46,6 @@ public class ForegroundService extends Service {
     private static final int ERROR_NOTIFICATION_ID = 1002;
     private boolean isErrorNotificationShowing = false;
 
-
-
     @SuppressLint("NewApi")
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -83,6 +81,7 @@ public class ForegroundService extends Service {
             );
 
             // Get high-intensity alarm sound
+            //for Android 8.0+
             Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
             if (alarmSound == null) {
                 alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
@@ -105,106 +104,31 @@ public class ForegroundService extends Service {
     }
 
 
-    private void checkGoogleAndNotify() {
-        new Thread(() -> {
-            try {
-                URL googleUrl = new URL("https://www.google.com");
-                HttpURLConnection connection = (HttpURLConnection) googleUrl.openConnection();
-                connection.setRequestMethod("GET");
-                connection.setConnectTimeout(5000);
-                connection.setReadTimeout(5000);
+    // Receive URL updates from MainActivity
+    private final BroadcastReceiver urlUpdateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent != null) {
+                String action = intent.getAction();
+                if ("com.aliya.SEND_URL".equals(action) && intent.hasExtra("urls")) {
+                    urls = intent.getStringArrayListExtra("urls");
+                    Log.e(TAG, "Received updated URLs in Service: " + urls);
 
-                int responseCode = connection.getResponseCode();
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    // Google is accessible, show error notification
-                    showErrorNotification();
-                } else {
-                    Log.e(TAG, "Both servers and Google are inaccessible. Possible network issue.");
+                    // Update counts immediately
+                    totalServers = urls.size();
+                    onlineServers = 0; // Reset online count before new processing
+
+                    // Update notification immediately with new total
+                    updateNotification();
+
+                    // Then process URLs
+                    processUrls();
+
+                    Log.e(TAG, "Updated counts - Total: " + totalServers + ", Online: " + onlineServers);
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "Error checking Google availability", e);
             }
-        }).start();
-    }
-
-    private void showErrorNotification() {
-        if (isErrorNotificationShowing) return;
-
-        Intent notificationIntent = new Intent(this, MainActivity.class);
-        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this,
-                0,
-                notificationIntent,
-                PendingIntent.FLAG_IMMUTABLE
-        );
-
-        Notification notification;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // Modern Android version (Oreo and above)
-            notification = new Notification.Builder(this, ERROR_CHANNEL_ID)
-                    .setContentTitle("Server Error")
-                    .setContentText("One or more servers are not responding")
-                    .setSmallIcon(R.drawable.companylogo)
-                    .setContentIntent(pendingIntent)
-                    .setAutoCancel(false)
-                    .setOngoing(true)
-                    .build();
-        } else {
-            // Legacy Android version (pre-Oreo)
-            Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-            if (alarmSound == null) {
-                alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
-            }
-
-            notification = new Notification.Builder(this)
-                    .setContentTitle("Server Error")
-                    .setContentText("One or more servers are not responding")
-                    .setSmallIcon(R.drawable.companylogo)
-                    .setContentIntent(pendingIntent)
-                    .setAutoCancel(false)
-                    .setOngoing(true)
-                    .setPriority(Notification.PRIORITY_MAX)
-                    .setDefaults(Notification.DEFAULT_ALL)
-                    .setSound(alarmSound)
-                    .setVibrate(new long[]{1000, 1000, 1000, 1000, 1000})
-                    .build();
         }
-
-        // For Android O and above, sound and vibration are handled by the channel
-        // For pre-O devices, they're set in the notification itself
-        notification.flags |= Notification.FLAG_INSISTENT;
-
-        notificationManager.notify(ERROR_NOTIFICATION_ID, notification);
-        isErrorNotificationShowing = true;
-
-        // For Android O and above, play additional sound using MediaPlayer
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            playAlarmSound();
-        }
-    }
-
-    private void playAlarmSound() {
-        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-        MediaPlayer mediaPlayer = MediaPlayer.create(getApplicationContext(), alarmSound);
-        if (mediaPlayer != null) {
-            mediaPlayer.setLooping(false);
-            mediaPlayer.start();
-            // Release the MediaPlayer after playing
-            mediaPlayer.setOnCompletionListener(mp -> {
-                mp.release();
-            });
-        }
-    }
-
-
-
-    private void removeErrorNotification() {
-        if (isErrorNotificationShowing) {
-            notificationManager.cancel(ERROR_NOTIFICATION_ID);
-            isErrorNotificationShowing = false;
-        }
-    }
+    };
 
     private void processUrls() {
         new Thread(() -> {
@@ -260,8 +184,7 @@ public class ForegroundService extends Service {
                     }
                 }
                 if (hasError) {
-//                    checkGoogleAndNotify();
-                    showErrorNotification();
+                    checkGoogleAndNotify();
                 } else {
                     removeErrorNotification();
                 }
@@ -289,31 +212,107 @@ public class ForegroundService extends Service {
         }).start();
     }
 
-    // Receive URL updates from MainActivity
-    private final BroadcastReceiver urlUpdateReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent != null) {
-                String action = intent.getAction();
-                if ("com.aliya.SEND_URL".equals(action) && intent.hasExtra("urls")) {
-                    urls = intent.getStringArrayListExtra("urls");
-                    Log.e(TAG, "Received updated URLs in Service: " + urls);
+    private void checkGoogleAndNotify() {
+        new Thread(() -> {
+            try {
+                URL googleUrl = new URL("https://www.google.com");
+                HttpURLConnection connection = (HttpURLConnection) googleUrl.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
 
-                    // Update counts immediately
-                    totalServers = urls.size();
-                    onlineServers = 0; // Reset online count before new processing
-
-                    // Update notification immediately with new total
-                    updateNotification();
-
-                    // Then process URLs
-                    processUrls();
-
-                    Log.e(TAG, "Updated counts - Total: " + totalServers + ", Online: " + onlineServers);
+                int responseCode = connection.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    // Google is accessible, show error notification
+                    showErrorNotification();
+                } else {
+                    Log.e(TAG, "Both servers and Google are inaccessible. Possible network issue.");
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "Error checking Google availability", e);
             }
+        }).start();
+    }
+
+    private void showErrorNotification() {
+        if (isErrorNotificationShowing) return;
+
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this,
+                0,
+                notificationIntent,
+                PendingIntent.FLAG_IMMUTABLE
+        );
+
+        Notification notification;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // Modern Android version (Oreo and above)
+            notification = new Notification.Builder(this, ERROR_CHANNEL_ID)
+                    .setContentTitle("Server Error")
+                    .setContentText("One or more servers are not responding")
+                    .setSmallIcon(R.drawable.companylogo)
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(false)
+                    .setOngoing(true)
+                    .build();
+        } else {
+            // Legacy Android version (pre-Oreo)
+            //Android 7.1 and below
+            Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+            if (alarmSound == null) {
+                alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+            }
+
+            notification = new Notification.Builder(this)
+                    .setContentTitle("Server Error")
+                    .setContentText("One or more servers are not responding")
+                    .setSmallIcon(R.drawable.companylogo)
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(false)
+                    .setOngoing(true)
+                    .setPriority(Notification.PRIORITY_MAX)
+                    .setDefaults(Notification.DEFAULT_ALL)
+                    .setSound(alarmSound)
+                    .setVibrate(new long[]{1000, 1000, 1000, 1000, 1000})
+                    .build();
         }
-    };
+
+        // For Android O and above, sound and vibration are handled by the channel
+        // For pre-O devices, they're set in the notification itself
+        notification.flags |= Notification.FLAG_INSISTENT;
+
+        notificationManager.notify(ERROR_NOTIFICATION_ID, notification);
+        isErrorNotificationShowing = true;
+
+        // For Android O and above, play additional sound using MediaPlayer
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            playAlarmSound();
+        }
+    }
+
+   // as a backup
+    private void playAlarmSound() {
+        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        MediaPlayer mediaPlayer = MediaPlayer.create(getApplicationContext(), alarmSound);
+        if (mediaPlayer != null) {
+            mediaPlayer.setLooping(false);
+            mediaPlayer.start();
+            // Release the MediaPlayer after playing
+            mediaPlayer.setOnCompletionListener(mp -> {
+                mp.release();
+            });
+        }
+    }
+
+    private void removeErrorNotification() {
+        if (isErrorNotificationShowing) {
+            notificationManager.cancel(ERROR_NOTIFICATION_ID);
+            isErrorNotificationShowing = false;
+        }
+    }
+
     private Notification createNotification() {
         String CHANNEL_ID = "ForegroundServiceChannel";
         NotificationChannel channel = null;
