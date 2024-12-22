@@ -24,11 +24,13 @@ class urlCard extends StatelessWidget {
               children: [
                 const Icon(Icons.link),
                 const SizedBox(width: 10),
-                Text(
-                  serverDetails?.serverUrl ?? 'N/A',
-                  style: const TextStyle(color: Color(0xFF41A3FF)),
+                Expanded(
+                  child: Text(
+                    serverDetails?.serverUrl ?? 'N/A',
+                    style: const TextStyle(color: Color(0xFF41A3FF)),
+                  ),
                 ),
-                const Spacer(),
+                // const Spacer(),
                 IconButton(
                     onPressed: () {
                       Clipboard.setData(ClipboardData(

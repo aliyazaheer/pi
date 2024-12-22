@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../detail_page_vm.dart';
 
 Card disksCard(DetailPageVM viewModel) {
+  viewModel.index = 0;
   return Card(
     elevation: 10,
     color: const Color(0xFF222832),

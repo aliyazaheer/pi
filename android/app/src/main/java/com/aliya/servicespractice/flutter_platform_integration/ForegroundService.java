@@ -72,7 +72,7 @@ public class ForegroundService extends Service {
         new Thread(() -> {
             try {
                 apisResponse.clear();
-                totalServers = urls.size();
+//                totalServers = urls.size();
                 onlineServers = 0;
 
                 Log.e(TAG, "Processing URLs: " + urls);
@@ -103,6 +103,7 @@ public class ForegroundService extends Service {
 
                             apisResponse.add(responseString);
                             onlineServers++;
+//                            updateNotification();
                             Log.e("TAG","++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"  );
                             Log.e("TAG","+++++++++++++++++Online Counter: " + onlineServers);
                             Log.e("TAG","++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"  );
@@ -119,8 +120,11 @@ public class ForegroundService extends Service {
                 // Send broadcast with updated data
                 Intent broadcastIntent = new Intent("com.aliya.TO_GET_API_DATA");
                 broadcastIntent.putStringArrayListExtra("apisResponse", new ArrayList<>(apisResponse));
-//                broadcastIntent.putExtra("totalServers", totalServers);
-//                broadcastIntent.putExtra("onlineServers", onlineServers);
+                if(onlineServers>totalServers){
+                    onlineServers=totalServers;
+                }
+                broadcastIntent.putExtra("totalServers", totalServers);
+                broadcastIntent.putExtra("onlineServers", onlineServers);
                 sendBroadcast(broadcastIntent);
 
                 Log.e(TAG, "Broadcast sent with responses: " + apisResponse);
@@ -130,6 +134,7 @@ public class ForegroundService extends Service {
 
             } catch (Exception e) {
                 Log.e(TAG, "Overall API processing error", e);
+                updateNotification();
             }
         }).start();
     }
@@ -138,12 +143,23 @@ public class ForegroundService extends Service {
     private final BroadcastReceiver urlUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent != null && intent.hasExtra("urls")) {
-                urls = intent.getStringArrayListExtra("urls");
-                if (urls != null) {
-                    Log.e(TAG, "Received URLs in Receiver: " + urls);
-                    // Trigger immediate processing of new URLs
+            if (intent != null) {
+                String action = intent.getAction();
+                if ("com.aliya.SEND_URL".equals(action) && intent.hasExtra("urls")) {
+                    urls = intent.getStringArrayListExtra("urls");
+                    Log.e(TAG, "Received updated URLs in Service: " + urls);
+
+                    // Update counts immediately
+                    totalServers = urls.size();
+                    onlineServers = 0; // Reset online count before new processing
+
+                    // Update notification immediately with new total
+                    updateNotification();
+
+                    // Then process URLs
                     processUrls();
+
+                    Log.e(TAG, "Updated counts - Total: " + totalServers + ", Online: " + onlineServers);
                 }
             }
         }
@@ -201,12 +217,16 @@ public class ForegroundService extends Service {
         if (handler != null) {
             handler.removeCallbacks(runnable);
         }
-//        if (urlUpdateReceiver != null) {
-//            unregisterReceiver(urlUpdateReceiver);
-//        }
+        if (urlUpdateReceiver != null) {
+            unregisterReceiver(urlUpdateReceiver);
+        }
+        urls.clear();
         totalServers = 0;
         onlineServers = 0;
         apisResponse.clear();
+
+        // Update notification one final time before destroying
+        updateNotification();
     }
 
     @Nullable

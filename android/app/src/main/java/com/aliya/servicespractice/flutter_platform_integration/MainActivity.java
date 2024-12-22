@@ -189,11 +189,11 @@ public class MainActivity extends FlutterActivity {
                 Log.e(TAG, "Received in MainActivity - Responses: " + apiResponses);
 
                 if (eventSink != null) {
-                    List<String> data=apiResponses;
-//                    Map<String, Object> data = new HashMap<>();
-//                    data.put("apisResponse", apiResponses);
-//                    data.put("totalServers", totalServers);
-//                    data.put("onlineServers", onlineServers);
+//                    List<String> data=apiResponses;
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("apisResponse", apiResponses);
+                    data.put("totalServers", totalServers);
+                    data.put("onlineServers", onlineServers);
                     eventSink.success(data);
                     Log.e(TAG, "Sent to EventSink: " + data);
                 }

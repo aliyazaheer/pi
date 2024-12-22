@@ -19,7 +19,7 @@ Row countOnlineOfAppBar(HomeVM viewModel) {
         width: 5,
       ),
       Text(
-          '${viewModel.countOnline} of ${viewModel.serverDetails.length} Online - ${viewModel.counter == 0 ? viewModel.isLoading == false && viewModel.serverModel != null ? viewModel.justNow : '' : viewModel.countSec}',
+          '${viewModel.onlineServers} of ${viewModel.totalServers} Online - ${viewModel.counter == 0 ? viewModel.isLoading == false && viewModel.serverModel != null ? viewModel.justNow : '' : viewModel.countSec}',
           style: const TextStyle(fontSize: 10))
     ],
   );
