@@ -66,7 +66,9 @@ class HomeVM extends BaseViewModel {
     if (!serverUrl.startsWith('https://')) {
       serverUrl = 'https://$serverUrl';
     }
-    serverUrl = '$serverUrl/rms/v1/serverHealth';
+    if (!serverUrl.endsWith('/rms/v1/serverHealth')) {
+      serverUrl = '$serverUrl/rms/v1/serverHealth';
+    }
     debugPrint(serverUrl);
     debugPrint(serverUrl);
     urls.add(serverUrl);
@@ -282,7 +284,9 @@ class HomeVM extends BaseViewModel {
   //     if (!serverUrl.startsWith('https://')) {
   //       serverUrl = 'https://$serverUrl';
   //     }
-  //     serverUrl = '$serverUrl/rms/v1/serverHealth';
+  //      if (!serverUrl.endsWith('/rms/v1/serverHealth')) {
+  //       serverUrl = '$serverUrl/rms/v1/serverHealth';
+  //      }
   //     final response = await http.get(Uri.parse(serverUrl));
   //     debugPrint(serverUrl);
 

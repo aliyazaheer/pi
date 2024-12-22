@@ -25,7 +25,7 @@ BarChart barChartOfCpu(BuildContext context, DetailPageVM viewModel) {
                   fontSize: 5,
                   color: Theme.of(context).brightness == Brightness.dark
                       ? const Color(0xFFF5F5F5)
-                      : const Color(0xFF2B313D),
+                      : const Color(0xFF222832),
                   fontWeight: FontWeight.w900),
             ),
           );
@@ -42,9 +42,11 @@ BarChart barChartOfCpu(BuildContext context, DetailPageVM viewModel) {
             space: 10,
             child: Text(
               value.toInt().toString(),
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 12,
-                  color: Colors.white,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFFF5F5F5)
+                      : const Color(0xFF222832),
                   fontWeight: FontWeight.w900),
             ),
           );
@@ -52,11 +54,20 @@ BarChart barChartOfCpu(BuildContext context, DetailPageVM viewModel) {
       )),
     ),
     borderData: FlBorderData(
-        border: const Border(
+        border: Border(
             top: BorderSide.none,
             right: BorderSide.none,
-            bottom: BorderSide(width: 1, color: Colors.white),
-            left: BorderSide(width: 1, color: Colors.white))),
+            bottom: BorderSide(
+              width: 1,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFFF5F5F5)
+                  : const Color(0xFF222832),
+            ),
+            left: BorderSide(
+                width: 1,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFFF5F5F5)
+                    : const Color(0xFF222832)))),
     // gridData: const FlGridData(show: false),
     barGroups: List.generate(
         viewModel.serverModel!.cpu.cpusArray.length,

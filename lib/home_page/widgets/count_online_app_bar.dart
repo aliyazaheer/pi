@@ -11,8 +11,8 @@ Row countOnlineOfAppBar(BuildContext context, HomeVM viewModel) {
             borderRadius: BorderRadius.circular(8),
             color: viewModel.isLoading
                 ? Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFFF5F5F5)
-                    :  const Color(0xFF2B313D)
+                    ? const Color(0xFF222832)
+                    : const Color(0xFFF5F5F5)
                 : viewModel.isRed
                     ? Colors.red
                     : Colors.green,

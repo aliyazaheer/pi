@@ -7,7 +7,7 @@ Container glowOfTextField(BuildContext context,
   return Container(
     decoration: BoxDecoration(
       color: Theme.of(context).brightness == Brightness.dark
-          ? const Color(0xFF2B313D)
+          ? const Color(0xFF222832)
           : const Color(0xFFF5F5F5),
       borderRadius: BorderRadius.circular(15),
       boxShadow: [

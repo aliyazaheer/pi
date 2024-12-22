@@ -6,7 +6,7 @@ import 'popup_menu_button.dart';
 Card cardsOfList(HomeVM viewModel, int index, BuildContext context) {
   return Card(
     elevation: 10,
-    color: Theme.of(context).brightness == Brightness.dark
+    color:  Theme.of(context).brightness == Brightness.dark
         ? const Color(0xFF222832)
         : const Color(0xFFF5F5F5),
     child: Padding(

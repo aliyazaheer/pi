@@ -16,7 +16,7 @@ class urlCard extends StatelessWidget {
     return Card(
       elevation: 10,
       color: Theme.of(context).brightness == Brightness.dark
-          ? const Color(0xFF2B313D)
+          ? const Color(0xFF222832)
           : const Color(0xFFF5F5F5),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),

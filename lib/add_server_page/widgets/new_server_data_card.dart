@@ -7,7 +7,7 @@ Widget newServerDataCard(BuildContext context, AddServerVM viewModel) {
   return Card(
     elevation: 10,
     color: Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF2B313D)
+        ? const Color(0xFF222832)
         : const Color(0xFFF5F5F5),
     child: Padding(
       padding: const EdgeInsets.all(12.0),

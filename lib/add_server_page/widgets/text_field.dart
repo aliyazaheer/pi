@@ -10,6 +10,7 @@ TextFormField textField(
     controller: controllerName,
     decoration: InputDecoration(
         border: const OutlineInputBorder(
+          borderSide: BorderSide.none,
           borderRadius: BorderRadius.all(Radius.circular(10)),
         ),
         hintText: hintTextOfField),

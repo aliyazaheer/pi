@@ -7,7 +7,9 @@ import '../home_vm.dart';
 PopupMenuButton<String> popUpMenuButtonFunction(
     BuildContext context, HomeVM viewModel, int index) {
   return PopupMenuButton<String>(
-    color: const Color(0xFF2B313D),
+    color: Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF222832)
+        : const Color(0xFFF5F5F5),
     icon: const Icon(Icons.more_vert),
     onSelected: (String value) async {
       if (value == 'Edit') {

@@ -4,10 +4,11 @@ import '../detail_page_vm.dart';
 
 Card disksCard(BuildContext context, DetailPageVM viewModel) {
   viewModel.index = 0;
+
   return Card(
     elevation: 10,
     color: Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF2B313D)
+        ? const Color(0xFF222832)
         : const Color(0xFFF5F5F5),
     child: Padding(
       padding: const EdgeInsets.all(12.0),
@@ -50,8 +51,12 @@ Card disksCard(BuildContext context, DetailPageVM viewModel) {
                                   height: 35,
                                   width: double.infinity,
                                   decoration: BoxDecoration(
-                                      color:
-                                          const Color.fromARGB(255, 61, 65, 74),
+                                      color: Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? const Color.fromARGB(
+                                              255, 61, 65, 74)
+                                          : const Color.fromARGB(
+                                              255, 172, 177, 187),
                                       borderRadius: BorderRadius.circular(6)),
                                   child: FractionallySizedBox(
                                     alignment: Alignment.centerLeft,
@@ -75,10 +80,15 @@ Card disksCard(BuildContext context, DetailPageVM viewModel) {
                                     RichText(
                                         text: TextSpan(
                                       children: [
-                                        const TextSpan(
+                                        TextSpan(
                                             text: 'Used: ',
                                             style: TextStyle(
-                                                fontWeight: FontWeight.w900)),
+                                                fontWeight: FontWeight.w900,
+                                                color: Theme.of(context)
+                                                            .brightness ==
+                                                        Brightness.dark
+                                                    ? const Color(0xFFF5F5F5)
+                                                    : const Color(0xFF222832))),
                                         viewModel.serverModel == null
                                             ? const TextSpan(
                                                 text: '-',
@@ -86,17 +96,29 @@ Card disksCard(BuildContext context, DetailPageVM viewModel) {
                                             : TextSpan(
                                                 text:
                                                     '${((disk.used) / 103741824).round()} GB',
-                                              )
+                                                style: TextStyle(
+                                                    color: Theme.of(context)
+                                                                .brightness ==
+                                                            Brightness.dark
+                                                        ? const Color(
+                                                            0xFFF5F5F5)
+                                                        : const Color(
+                                                            0xFF222832)))
                                       ],
                                     )),
                                     const Spacer(),
                                     RichText(
                                         text: TextSpan(
                                       children: [
-                                        const TextSpan(
+                                        TextSpan(
                                             text: 'Total: ',
                                             style: TextStyle(
-                                                fontWeight: FontWeight.w900)),
+                                                fontWeight: FontWeight.w900,
+                                                color: Theme.of(context)
+                                                            .brightness ==
+                                                        Brightness.dark
+                                                    ? const Color(0xFFF5F5F5)
+                                                    : const Color(0xFF222832))),
                                         viewModel.isLoading ||
                                                 viewModel.serverModel == null
                                             ? const TextSpan(
@@ -105,7 +127,14 @@ Card disksCard(BuildContext context, DetailPageVM viewModel) {
                                             : TextSpan(
                                                 text:
                                                     '${((disk.total) / 103741824).round()} GB',
-                                              )
+                                                style: TextStyle(
+                                                    color: Theme.of(context)
+                                                                .brightness ==
+                                                            Brightness.dark
+                                                        ? const Color(
+                                                            0xFFF5F5F5)
+                                                        : const Color(
+                                                            0xFF222832)))
                                       ],
                                     )),
                                   ],
