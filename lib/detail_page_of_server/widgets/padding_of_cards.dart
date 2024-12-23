@@ -7,5 +7,3 @@ Padding paddingOfCards(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       child: glowOfCard);
 }
-
-  //  cardFunction: cpuCard(viewModel),

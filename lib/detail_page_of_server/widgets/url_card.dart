@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 
 import '../../models/server_details.dart';
 
-class urlCard extends StatelessWidget {
-  const urlCard({
+class UrlCard extends StatelessWidget {
+  const UrlCard({
     super.key,
     required this.serverDetails,
   });

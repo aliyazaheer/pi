@@ -184,15 +184,6 @@ class HomeVM extends BaseViewModel {
     }
   }
 
-  // countOnlineUpdate() {
-  //   countOnline >= serverDetails.length ? countOnline = 0 : countOnline;
-  //   serverModel != null ? countOnline++ : countOnline = countOnline;
-  //   debugPrint(
-  //       '+++++++++++ Count online = $countOnline +++++ ${serverDetails.length}');
-  //   countOnline < serverDetails.length ? isRed = true : isRed = false;
-  //   print('========isRed========= $isRed');
-  // }
-
   Future<void> fetchDataAndStartService() async {
     try {
       final servers = await SharedPref.getSavedServerDetailsList();
@@ -265,14 +256,12 @@ class HomeVM extends BaseViewModel {
 
   initializeSwitchState() async {
     isServiceRunning = (await SharedPref.getSwitchState()) ?? true;
-    // isOn ??= true;
     debugPrint('+++isServerRunning =   $isServiceRunning +++');
     notifyListeners();
   }
 
   initializeTheme() async {
     theme = (await SharedPref.getTheme());
-    // isOn ??= true;
     debugPrint('+++isDark =   $theme +++');
     notifyListeners();
   }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
-
 import '../common_widgets/glow_of_cards.dart';
 import '../common_widgets/space.dart';
 import '../models/server_details.dart';

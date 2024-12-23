@@ -17,8 +17,6 @@ Column appBarSwitch(BuildContext context, HomeVM viewModel) {
               viewModel.toggleSwitch();
               if (viewModel.isServiceRunning == true) {
                 viewModel.fetchDataAndStartService();
-              } else {
-                // viewModel.stopTimer();
               }
             },
           ),

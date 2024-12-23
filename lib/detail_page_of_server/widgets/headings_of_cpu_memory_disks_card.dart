@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../detail_page_vm.dart';
 
-Padding headingOfCpuMemoryAndDisksCards( {
-    required DetailPageVM viewModel, required String textOfHeading}) {
+Padding headingOfCpuMemoryAndDisksCards(
+    {required DetailPageVM viewModel, required String textOfHeading}) {
   return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16),
     child: Align(

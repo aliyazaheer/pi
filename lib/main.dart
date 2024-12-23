@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     SharedPref.getTheme().then((theme) {
-      themeModeNotifier.value = theme; // Update the theme once loaded
+      themeModeNotifier.value = theme;
     });
     return ValueListenableBuilder<ThemeMode>(
         valueListenable: themeModeNotifier,
@@ -70,8 +70,3 @@ class MyApp extends StatelessWidget {
         });
   }
 }
-
-// //scaffoldBackgroundColor: const Color(0xFF2B313D),
-// //seedColor: const Color(0xFF41A3FF),
-
-

@@ -1,6 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-
 import '../detail_page_vm.dart';
 
 BarChart barChartOfCpu(BuildContext context, DetailPageVM viewModel) {
@@ -68,13 +67,11 @@ BarChart barChartOfCpu(BuildContext context, DetailPageVM viewModel) {
                 color: Theme.of(context).brightness == Brightness.dark
                     ? const Color(0xFFF5F5F5)
                     : const Color(0xFF222832)))),
-    // gridData: const FlGridData(show: false),
     barGroups: List.generate(
         viewModel.serverModel!.cpu.cpusArray.length,
         (index) => BarChartGroupData(x: index, barRods: [
               BarChartRodData(
                   toY: viewModel.serverModel!.cpu.cpusArray[index].toDouble(),
-                  // fromY: 30,
                   width: 10,
                   color: const Color(0xFF41A3FF),
                   borderRadius: BorderRadius.zero)

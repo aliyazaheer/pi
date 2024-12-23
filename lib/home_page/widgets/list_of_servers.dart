@@ -9,7 +9,6 @@ ListView listOfServers(HomeVM viewModel) {
   return ListView.builder(
       itemCount: viewModel.serverDetails.length,
       itemBuilder: (context, index) {
-        // viewModel.countOnlineUpdate();
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           child: InkWell(

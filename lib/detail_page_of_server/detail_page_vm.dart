@@ -16,28 +16,15 @@ class DetailPageVM extends BaseViewModel {
   Timer? time;
   int index = 0;
 
-  // double animationValue = 0.0;
-  // startDataFetchAnimation() {
-  // for (double i = 0.0; i <= 1.0; i = i + 0.1) {
-  // animationValue = 1;
-  // Future.delayed(Duration(milliseconds: (i * 1500).toInt()), () {
-  //   animationValue = i;
-  //   notifyListeners();
-  // });
-  // }
-  // }
-
   void startTimer(Function fetchData) {
     refreshTime = Timer.periodic(const Duration(seconds: 10), (timer) {
       fetchData();
     });
   }
 
-
   fetchServerModel(String serverUrl) async {
     isLoading = true;
     errorInFetchingData = null;
-    // notifyListeners();
     try {
       if (!serverUrl.startsWith('https://')) {
         serverUrl = 'https://$serverUrl';

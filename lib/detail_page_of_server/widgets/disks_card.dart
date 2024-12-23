@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-
 import '../detail_page_vm.dart';
 
 Card disksCard(BuildContext context, DetailPageVM viewModel) {
   viewModel.index = 0;
-
   return Card(
     elevation: 10,
     color: Theme.of(context).brightness == Brightness.dark

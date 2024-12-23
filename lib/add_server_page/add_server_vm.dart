@@ -18,8 +18,6 @@ class AddServerVM extends BaseViewModel {
     return serverUrl.isNotEmpty &&
         !serverUrl.contains(' ') &&
         serverUrl.contains('.com');
-    // &&
-    // serverUrl.endsWith('.com');
   }
 
   fetchServerModel(serverUrl) async {

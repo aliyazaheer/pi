@@ -17,7 +17,6 @@ FloatingActionButton floatingAddServerButton(
         await viewModel.addServerDetails(result);
         await SharedPref.saveServerDetailsList(viewModel.serverDetails);
         await viewModel.addUrlsInList(result.serverUrl);
-        // await viewModel.fetchServerModel(result.serverUrl);
         viewModel.notifyListeners();
       }
     },

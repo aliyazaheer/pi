@@ -51,7 +51,7 @@ class DetailPageVU extends StackedView<DetailPageVM> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             child: glowOfCard(
-              cardFunction: urlCard(serverDetails: serverDetails),
+              cardFunction: UrlCard(serverDetails: serverDetails),
             ),
           ),
           spaceY(heightValue: 10),

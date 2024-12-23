@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_platform_integration/shared_pref/shared_pref.dart';
 import 'package:stacked/stacked.dart';
-
 import '../models/server_details.dart';
 import 'home_vm.dart';
 import 'widgets/app_bar_switch.dart';

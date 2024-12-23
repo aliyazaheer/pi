@@ -1,7 +1,6 @@
 import 'dart:convert';
 
-
-class ServerDetails{
+class ServerDetails {
   String serverName;
   String serverUrl;
   ServerDetails({required this.serverName, required this.serverUrl});
