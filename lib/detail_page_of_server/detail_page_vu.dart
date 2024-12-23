@@ -11,6 +11,7 @@ import 'widgets/memory_card.dart';
 import '../common_widgets/space.dart';
 import 'widgets/padding_of_cards.dart';
 import 'widgets/url_card.dart';
+import 'widgets/webview_card.dart';
 
 class DetailPageVU extends StackedView<DetailPageVM> {
   final ServerDetails? serverDetails;
@@ -47,37 +48,70 @@ class DetailPageVU extends StackedView<DetailPageVM> {
         ),
         body: SingleChildScrollView(
             child: Column(children: [
-          headingOfUrL(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            child: glowOfCard(
-              cardFunction: UrlCard(serverDetails: serverDetails),
+          if (viewModel.serverModel == null) ...[
+            paddingOfCards(
+                viewModel: viewModel,
+                glowOfCard: glowOfCard(
+                    cardFunction: WebViewCardWidget(
+                        viewModel: viewModel,
+                        url:
+                            'https://umair-stable.smartclinicpk.com/rms/v1/swagger')))
+          ] else ...[
+            headingOfUrL(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              child: glowOfCard(
+                cardFunction: UrlCard(serverDetails: serverDetails),
+              ),
             ),
-          ),
-          spaceY(heightValue: 10),
-          headingOfCpuMemoryAndDisksCards(
-              viewModel: viewModel, textOfHeading: 'CPUs'),
-          paddingOfCards(
-              viewModel: viewModel,
-              glowOfCard: glowOfCard(
-                cardFunction: cpuCard(context, viewModel),
-              )),
-          spaceY(heightValue: 10),
-          headingOfCpuMemoryAndDisksCards(
-              viewModel: viewModel, textOfHeading: 'Memory:'),
-          paddingOfCards(
-              viewModel: viewModel,
-              glowOfCard: glowOfCard(
-                cardFunction: memoryCard(context, viewModel),
-              )),
-          spaceY(heightValue: 10),
-          headingOfCpuMemoryAndDisksCards(
-              viewModel: viewModel, textOfHeading: 'Disks:'),
-          paddingOfCards(
-              viewModel: viewModel,
-              glowOfCard: glowOfCard(
-                cardFunction: disksCard(context, viewModel),
-              )),
+            spaceY(heightValue: 10),
+            headingOfCpuMemoryAndDisksCards(
+                viewModel: viewModel, textOfHeading: 'CPUs'),
+            paddingOfCards(
+                viewModel: viewModel,
+                glowOfCard: glowOfCard(
+                  cardFunction: cpuCard(context, viewModel),
+                )),
+            spaceY(heightValue: 10),
+            headingOfCpuMemoryAndDisksCards(
+                viewModel: viewModel, textOfHeading: 'Memory:'),
+            paddingOfCards(
+                viewModel: viewModel,
+                glowOfCard: glowOfCard(
+                  cardFunction: memoryCard(context, viewModel),
+                )),
+            spaceY(heightValue: 10),
+            headingOfCpuMemoryAndDisksCards(
+                viewModel: viewModel, textOfHeading: 'Disks:'),
+            paddingOfCards(
+                viewModel: viewModel,
+                glowOfCard: glowOfCard(
+                  cardFunction: disksCard(context, viewModel),
+                )),
+            spaceY(heightValue: 10),
+            paddingOfCards(
+                viewModel: viewModel,
+                glowOfCard: glowOfCard(
+                  cardFunction: WebViewCardWidget(
+                      viewModel: viewModel,
+                      url: 'https://umair-stable.smartclinicpk.com'),
+                )),
+            spaceY(heightValue: 10),
+            paddingOfCards(
+                viewModel: viewModel,
+                glowOfCard: glowOfCard(
+                  cardFunction: WebViewCardWidget(
+                      viewModel: viewModel,
+                      url:
+                          'https://umair-stable.smartclinicpk.com/rms/v1/swagger'),
+                )),
+            // paddingOfCards(
+            //     viewModel: viewModel,
+            //     glowOfCard: glowOfCard(
+            //       cardFunction: webViewCard(context, viewModel,
+            //           'https://umair-stable.smartclinicpk.com/rms/v1/swagger'),
+            //     )),
+          ]
         ])));
   }
 

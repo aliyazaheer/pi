@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // WebView.platform = SurfaceAndroidWebView();
   await SharedPref.init();
   runApp(MyApp());
 }

@@ -15,12 +15,12 @@ ListView listOfServers(HomeVM viewModel) {
             child: glowOfCard(
                 cardFunction: cardsOfList(viewModel, index, context)),
             onTap: () {
-              if (viewModel.serverModel == null) {
-                Fluttertoast.showToast(
-                  msg: "No server details to open",
-                );
-                return;
-              }
+              // if (viewModel.serverModel == null) {
+              //   Fluttertoast.showToast(
+              //     msg: "No server details to open",
+              //   );
+              //   return;
+              // }
               final selectedServerDetails = viewModel.serverDetails[index];
               Navigator.push(
                   context,

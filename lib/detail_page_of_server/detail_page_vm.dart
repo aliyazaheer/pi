@@ -83,4 +83,25 @@ class DetailPageVM extends BaseViewModel {
   double getDiskUsage(int used, int total) {
     return used / total;
   }
+
+  bool _isWebViewLoading = false;
+  int _webViewLoadingProgress = 0;
+
+  bool get isWebViewLoading {
+    return _isWebViewLoading;
+  }
+
+  // int get webViewLoadingProgress {
+  //   return _webViewLoadingProgress;
+  // }
+
+  void setWebViewLoading(bool isLoading) {
+    _isWebViewLoading = isLoading;
+    notifyListeners();
+  }
+
+  void updateWebViewLoadingProgress(int progress) {
+    // _webViewLoadingProgress = progress;
+    // notifyListeners();
+  }
 }

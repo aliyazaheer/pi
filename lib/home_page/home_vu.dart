@@ -42,7 +42,7 @@ class HomeVU extends StackedView<HomeVM> {
               icon: Icon(Theme.of(context).brightness == Brightness.dark
                   ? Icons.light_mode
                   : Icons.dark_mode)),
-          appBarSwitch(context, viewModel)
+          // appBarSwitch(context, viewModel)
         ],
         title: Align(
           alignment: Alignment.centerLeft,

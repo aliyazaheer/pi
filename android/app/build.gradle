@@ -25,8 +25,9 @@ if (flutterVersionName == null) {
 
 android {
     namespace = "com.aliya.servicespractice.flutter_platform_integration"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // compileSdk = flutter.compileSdkVersion
+    compileSdkVersion 34
+    ndkVersion "25.1.8937393"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -42,7 +43,8 @@ android {
         applicationId = "com.aliya.servicespractice.flutter_platform_integration"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdk = flutter.minSdkVersion
+        // minSdk = flutter.minSdkVersion
+         minSdkVersion flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName

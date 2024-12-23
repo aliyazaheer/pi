@@ -1,6 +1,7 @@
 package com.aliya.servicespractice.flutter_platform_integration;
 
 import android.annotation.SuppressLint;
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -28,6 +29,8 @@ public class MainActivity extends FlutterActivity {
     private static final String METHOD_CHANNEL = "com.aliya.servicespractice/foreground";
     private static final String EVENT_CHANNEL = "com.aliya.servicespractice/counterStream";
     private EventChannel.EventSink eventSink;
+    static final int ERROR_NOTIFICATION_ID = 1001;
+
 
     @SuppressLint("NewApi")
     @Override
@@ -179,5 +182,13 @@ public class MainActivity extends FlutterActivity {
         unregisterReceiver(dataUpdateReceiver);
 
     }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Cancel the error notification when the app is opened
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancel(ERROR_NOTIFICATION_ID); // Make sure ERROR_NOTIFICATION_ID is defined
+    }
+
 }
 
