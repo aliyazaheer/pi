@@ -18,7 +18,7 @@ ListView listOfServers(HomeVM viewModel) {
             onTap: () {
               if (viewModel.serverModel == null) {
                 Fluttertoast.showToast(
-                  msg: "No server details to add",
+                  msg: "No server details to open",
                 );
                 return;
               }
