@@ -10,6 +10,16 @@ class urlCard extends StatelessWidget {
   });
 
   final ServerDetails? serverDetails;
+  checkUrlBeforeCopy(String serverUrl) {
+    if (!serverUrl.startsWith('https://')) {
+      serverUrl = 'https://$serverUrl';
+    }
+    if (serverUrl.endsWith('.com') &&
+        !serverUrl.endsWith('/rms/v1/serverHealth')) {
+      serverUrl = '$serverUrl/rms/v1/serverHealth';
+    }
+    return serverUrl;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +47,7 @@ class urlCard extends StatelessWidget {
                     onPressed: () {
                       Clipboard.setData(ClipboardData(
                               text:
-                                  'https://${serverDetails!.serverUrl}/rms/v1/serverHealth'))
+                                  checkUrlBeforeCopy(serverDetails!.serverUrl)))
                           .then((_) {
                         ScaffoldMessenger.of(context)
                             .showSnackBar(const SnackBar(

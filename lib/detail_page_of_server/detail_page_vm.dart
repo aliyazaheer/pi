@@ -33,6 +33,7 @@ class DetailPageVM extends BaseViewModel {
     });
   }
 
+
   fetchServerModel(String serverUrl) async {
     isLoading = true;
     errorInFetchingData = null;
