@@ -66,7 +66,8 @@ class HomeVM extends BaseViewModel {
     if (!serverUrl.startsWith('https://')) {
       serverUrl = 'https://$serverUrl';
     }
-    if (!serverUrl.endsWith('/rms/v1/serverHealth')) {
+    if (serverUrl.endsWith('.com') &&
+        !serverUrl.endsWith('/rms/v1/serverHealth')) {
       serverUrl = '$serverUrl/rms/v1/serverHealth';
     }
     debugPrint(serverUrl);
