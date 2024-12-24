@@ -7,6 +7,7 @@ import 'widgets/app_bar_switch.dart';
 import 'widgets/count_online_app_bar.dart';
 import 'widgets/floating_add_servers_button.dart';
 import 'widgets/list_of_servers.dart';
+import 'widgets/popup_menu_of_appbar.dart';
 
 class HomeVU extends StackedView<HomeVM> {
   final VoidCallback onThemeToggle;
@@ -18,6 +19,7 @@ class HomeVU extends StackedView<HomeVM> {
     super.onViewModelReady(viewModel);
     await viewModel.initializeSwitchState();
     await viewModel.initializeTheme();
+    await viewModel.initializeSelectedValueOfDelayTime();
     await SharedPref.getSavedServerDetailsList();
     if (viewModel.isServiceRunning == true) {
       await viewModel.fetchDataAndStartService();
@@ -42,6 +44,7 @@ class HomeVU extends StackedView<HomeVM> {
               icon: Icon(Theme.of(context).brightness == Brightness.dark
                   ? Icons.light_mode
                   : Icons.dark_mode)),
+          popUpMenuOfAppBar(context, viewModel)
           // appBarSwitch(context, viewModel)
         ],
         title: Align(

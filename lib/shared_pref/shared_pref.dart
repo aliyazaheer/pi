@@ -61,4 +61,14 @@ class SharedPref {
     debugPrint('+++++++++++++ $themeString++++++++++++++++++++');
     return ThemeMode.system;
   }
+
+  static Future<void> setDelayTimeOfResponse(String key, String value) async {
+    await prefs?.setString(key, value);
+  }
+
+  static Future<String?> getDelayTimeOfResponse(String key) async {
+    final delayTime = prefs?.getString(key);
+    debugPrint('+++++++++++++ $delayTime++++++++++++++++++++');
+    return delayTime;
+  }
 }

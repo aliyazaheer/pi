@@ -36,7 +36,7 @@ public class MainActivity extends FlutterActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        handleAlarmStop();
         // Start the ForegroundService
         if (!isServiceRunning(this, ForegroundService.class)) {
             Intent serviceIntent = new Intent(this, ForegroundService.class);
@@ -52,6 +52,19 @@ public class MainActivity extends FlutterActivity {
         IntentFilter filter = new IntentFilter("com.aliya.TO_GET_API_DATA");
         registerReceiver(dataUpdateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
     }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        handleAlarmStop();
+    }
+
+    private void handleAlarmStop() {
+        if (getIntent().getBooleanExtra("stopAlarm", false)) {
+            ForegroundService.getInstance().stopAlarmSound();
+        }
+    }
+
     private boolean isServiceRunning(Context context, Class<?> serviceClass) {
         android.app.ActivityManager manager =
                 (android.app.ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
@@ -86,6 +99,15 @@ public class MainActivity extends FlutterActivity {
                             }
                             break;
 
+                        case "delayTime":
+                            // This handles all the delay time changes
+                            int delayTime = call.argument("delayTime");
+                            Intent intent = new Intent("com.minutes");
+                            intent.putExtra("delayTime", delayTime);
+                            sendBroadcast(intent);
+                            result.success("Sent delayTime: " + delayTime);
+                            break;
+
                         case "stopForegroundService":
                             Intent stopIntent = new Intent(this, ForegroundService.class);
                             stopService(stopIntent);
@@ -113,7 +135,7 @@ public class MainActivity extends FlutterActivity {
                             }
                             result.success("Service Restarted");
                             break;
-                         case "updateServiceUrls":
+                        case "updateServiceUrls":
                             List<String> updatedUrls = call.argument("urls");
                             if (updatedUrls != null) {
                                 // Send updated URLs to service
@@ -182,13 +204,17 @@ public class MainActivity extends FlutterActivity {
         unregisterReceiver(dataUpdateReceiver);
 
     }
+
     @Override
     protected void onResume() {
         super.onResume();
-        // Cancel the error notification when the app is opened
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancel(ERROR_NOTIFICATION_ID); // Make sure ERROR_NOTIFICATION_ID is defined
+        ForegroundService service = ForegroundService.getInstance();
+        if (service != null) {
+            service.stopAlarmSound();
+            NotificationManager notificationManager =
+                    (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManager.cancel(ForegroundService.ERROR_NOTIFICATION_ID);
+        }
     }
-
 }
 

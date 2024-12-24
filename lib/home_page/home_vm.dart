@@ -29,6 +29,7 @@ class HomeVM extends BaseViewModel {
 
   bool isServiceRunning = false;
   ThemeMode theme = ThemeMode.dark;
+  String? selectedValue;
 
   static const methodChannel =
       MethodChannel('com.aliya.servicespractice/foreground');
@@ -156,7 +157,19 @@ class HomeVM extends BaseViewModel {
     lastResponseTime?.cancel();
     lastResponseTime = Timer.periodic(const Duration(seconds: 1), (timer) {
       counter++;
-      countSec = '$counter Sec';
+      int hours = counter ~/ 3600; // 1 hour = 3600 seconds
+      int minutes = (counter % 3600) ~/ 60; // Get remaining minutes after hours
+      int seconds = counter % 60; // Remaining seconds after minutes
+
+      if (hours > 0) {
+        countSec = '$hours hr ${minutes} min ${seconds} sec ago';
+      } else if (minutes > 0) {
+        countSec = '$minutes min ${seconds} sec ago';
+      } else {
+        countSec = '$seconds sec ago';
+      }
+
+      // countSec = '$counter sec ago';
       notifyListeners();
       debugPrint("Timer: $counter seconds");
     });
@@ -213,6 +226,74 @@ class HomeVM extends BaseViewModel {
     } catch (e) {
       debugPrint('Error fetching server details: $e');
     }
+  }
+
+  off() async {
+    if (isServiceRunning) {
+      await methodChannel.invokeMethod('stopForegroundService');
+      serverModels.clear();
+      urls.clear();
+      isLoading = false;
+      debugPrint("Service Stopped");
+    }
+  }
+
+  void restartServiceWithInterval(String interval) async {
+    if (!isServiceRunning) {
+      debugPrint("Restarting Service...");
+      try {
+        final servers = await SharedPref.getSavedServerDetailsList();
+        if (servers.isNotEmpty) {
+          List<String> urls = [];
+          for (var server in servers) {
+            urls.add(server.serverUrl);
+          }
+          await methodChannel.invokeMethod('restartForegroundService', {
+            'urls': urls,
+            'interval': interval,
+          });
+          debugPrint("Service Restarted with Interval: $interval");
+        }
+      } catch (e) {
+        debugPrint('Error restarting service: $e');
+      }
+      isServiceRunning = true;
+    }
+  }
+
+  Future<void> initializeSelectedValueOfDelayTime() async {
+    selectedValue =
+        await SharedPref.getDelayTimeOfResponse('selectedInterval') ?? 'Off';
+  }
+
+  /// Update the selected value and persist it in SharedPref
+  void setSelectedValue(String value) {
+    selectedValue = value;
+  }
+
+  oneMin() async {
+    await methodChannel.invokeMethod('delayTime', {'delayTime': 60000});
+    debugPrint("1 minute send");
+  }
+
+  threeMin() async {
+    await methodChannel.invokeMethod('delayTime', {'delayTime': 180000});
+    debugPrint("3 minutes send");
+  }
+
+  fiveMin() async {
+    await methodChannel.invokeMethod('delayTime', {'delayTime': 300000});
+    debugPrint("5 minutes send");
+  }
+
+  sevenMin() async {
+    await methodChannel.invokeMethod('delayTime', {'delayTime': 420000});
+    debugPrint("7 minutes send");
+  }
+
+  tenMin() async {
+    await methodChannel.invokeMethod('delayTime', {'delayTime': 600000});
+    debugPrint("10 minutes send");
   }
 
   toggleSwitch() async {
