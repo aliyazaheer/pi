@@ -13,7 +13,7 @@ Row countOnlineOfAppBar(BuildContext context, HomeVM viewModel) {
                 ? Theme.of(context).brightness == Brightness.dark
                     ? const Color(0xFFF5F5F5)
                     : const Color(0xFF222832)
-                : viewModel.isRed
+                : viewModel.onlineServers < viewModel.totalServers
                     ? Colors.red
                     : Colors.green,
           )),

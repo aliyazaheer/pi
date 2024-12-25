@@ -24,7 +24,7 @@ Card cardsOfList(HomeVM viewModel, int index, BuildContext context) {
                         ? Theme.of(context).brightness == Brightness.dark
                             ? const Color(0xFFF5F5F5)
                             : const Color(0xFF2B313D)
-                        : viewModel.serverModel == null
+                        : viewModel.isOnline == false
                             ? Colors.red
                             : Colors.green,
                   )),

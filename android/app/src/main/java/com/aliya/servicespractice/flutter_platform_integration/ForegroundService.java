@@ -51,6 +51,9 @@ public class ForegroundService extends Service {
     private static ForegroundService instance;
     private boolean firstTimeAlarmDuringDown;
     private int delayTime = 60000;
+   private boolean isOnline=true;
+   private static final String STOP_ALARM_ACTION = "com.aliya.STOP_ALARM";
+
 
     @SuppressLint("NewApi")
     public void onCreate() {
@@ -100,19 +103,6 @@ public class ForegroundService extends Service {
             handler = new Handler(Looper.getMainLooper());
         }
 
-//        // Initialize runnable
-//        runnable = new Runnable() {
-//            @Override
-//            public void run() {
-//                Log.e(TAG, "Runnable executing, URLs: " + urls);
-//                if (urls != null && !urls.isEmpty()) {
-//                    processUrls();
-//                } else {
-//                    Log.e(TAG, "No URLs available to process");
-//                }
-//                handler.postDelayed(this, delayTime);
-//            }
-//        };
 
         // Get URLs from intent if provided
         if (intent != null && intent.hasExtra("urls")) {
@@ -151,43 +141,6 @@ public class ForegroundService extends Service {
         }
 
 
-        // Start foreground notification
-//        startForeground(1001, createNotification());
-
-        // Start periodic checks
-//        handler.removeCallbacks(runnable); // Remove any existing callbacks
-//        handler.post(runnable);
-//        Log.e(TAG, "Foreground Service Started...");
-//
-//        // Register the receiver to update URL
-//        IntentFilter filter = new IntentFilter("com.aliya.SEND_URL");
-//        registerReceiver(urlUpdateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-//
-//        handler = new Handler();
-//        runnable = new Runnable() {
-//            @Override
-//            public void run() {
-//                Log.e(TAG, "Runnable executing, URLs: " + urls);
-//                if (urls != null && !urls.isEmpty()) {
-//                    processUrls();
-//                } else {
-//                    Log.e(TAG, "No URLs available to process");
-//                }
-//                handler.postDelayed(this, delayTime);
-//            }
-//        };
-//        handler.post(runnable);
-//
-//        // Start foreground notification
-//        startForeground(1001, createNotification());
-//        if (handler != null && runnable != null) {
-//            handler.removeCallbacks(runnable);
-//            handler.postDelayed(runnable, delayTime);
-//        }
-
-
-
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel errorChannel = new NotificationChannel(
                     ERROR_CHANNEL_ID,
@@ -218,37 +171,6 @@ public class ForegroundService extends Service {
         return START_NOT_STICKY;
     }
 
-
-    // Receive URL updates from MainActivity
-//    private final BroadcastReceiver urlUpdateReceiver = new BroadcastReceiver() {
-//        @Override
-//        public void onReceive(Context context, Intent intent) {
-//            if (intent != null) {
-//                String action = intent.getAction();
-//                if ("com.aliya.SEND_URL".equals(action) && intent.hasExtra("urls")) {
-//                    urls = intent.getStringArrayListExtra("urls");
-//                    Log.e(TAG, "Received updated URLs in Service: " + urls);
-//
-//                    // Update counts immediately
-//                    totalServers = urls.size();
-//                    onlineServers = 0; // Reset online count before new processing
-//
-//                    // Update notification immediately with new total
-//                    updateNotification();
-//
-//                    // Then process URLs
-//                    processUrls();
-//
-//                    Log.e(TAG, "Updated counts - Total: " + totalServers + ", Online: " + onlineServers);
-//                }
-////                if ("com.minutes".equals(action) && intent.hasExtra("delayTime")) {
-////                    delayTime = intent.getIntExtra("delayTime", 60000);
-////                    Log.e(TAG, "Updated delayTime to: " + delayTime);
-////                }
-//
-//            }
-//        }
-//    };
     private final BroadcastReceiver urlUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -269,8 +191,6 @@ public class ForegroundService extends Service {
             }
         }
     };
-
-
 
     private void processUrls() {
         new Thread(() -> {
@@ -336,6 +256,7 @@ public class ForegroundService extends Service {
                 }
                 broadcastIntent.putExtra("totalServers", totalServers);
                 broadcastIntent.putExtra("onlineServers", onlineServers);
+                broadcastIntent.putExtra("isOnline", isOnline);
                 sendBroadcast(broadcastIntent);
 
                 Log.e(TAG, "Broadcast sent with responses: " + apisResponse);
@@ -343,8 +264,9 @@ public class ForegroundService extends Service {
                 // Update notification with server status
                 updateNotification();
                 if (hasError && !firstTimeAlarmDuringDown) {
-//                    showErrorNotification();
-                    checkGoogleAndNotify();
+                    showErrorNotification();
+                    isOnline=false;
+//                    checkGoogleAndNotify();
                 } else {
                     removeErrorNotification();
                 }
@@ -385,12 +307,20 @@ public class ForegroundService extends Service {
                 this, 0, notificationIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
+        Intent stopAlarmIntent = new Intent(STOP_ALARM_ACTION);
+        PendingIntent stopAlarmPendingIntent = PendingIntent.getBroadcast(
+                this,
+                0,
+                stopAlarmIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
 
         @SuppressLint({"NewApi", "LocalSuppress"}) Notification notification = new Notification.Builder(this, ERROR_CHANNEL_ID)
                 .setContentTitle("Server Error")
                 .setContentText("One or more servers are not responding")
                 .setSmallIcon(R.drawable.companylogo)
-                .setContentIntent(pendingIntent)
+                .setContentIntent(stopAlarmPendingIntent)
                 .setAutoCancel(true)
                 .build();
 

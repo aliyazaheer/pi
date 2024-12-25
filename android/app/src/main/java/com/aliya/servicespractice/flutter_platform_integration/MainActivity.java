@@ -87,13 +87,44 @@ public class MainActivity extends FlutterActivity {
                     switch (call.method) {
                         case "startForegroundService":
                             List<String> urls = call.argument("urls");
-                            Log.e(TAG, "Got URLs in MainActivity: " + urls);
+                            Integer delayTime = call.argument("delayTime");
+                            Log.e(TAG, "Starting service with URLs: " + urls + " and delay: " + delayTime);
 
                             if (urls != null) {
-                                Intent intent = new Intent("com.aliya.SEND_URL");
-                                intent.putStringArrayListExtra("urls", new ArrayList<>(urls));
-                                sendBroadcast(intent);
-                                Log.e(TAG, "Broadcast sent with URLs: " + urls);
+                                // First ensure service is started with proper initialization
+                                Intent serviceIntent = new Intent(this, ForegroundService.class);
+                                serviceIntent.putStringArrayListExtra("urls", new ArrayList<>(urls));
+                                if (delayTime != null) {
+                                    serviceIntent.putExtra("delayTime", delayTime);
+                                }
+
+                                // Start service
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    startForegroundService(serviceIntent);
+                                } else {
+                                    startService(serviceIntent);
+                                }
+
+                                // Short delay to ensure service is started
+                                try {
+                                    Thread.sleep(100);
+                                } catch (InterruptedException e) {
+                                    Log.e(TAG, "Sleep interrupted", e);
+                                }
+
+                                // Then send URLs via broadcast to ensure they're received
+                                Intent urlIntent = new Intent("com.aliya.SEND_URL");
+                                urlIntent.putStringArrayListExtra("urls", new ArrayList<>(urls));
+                                sendBroadcast(urlIntent);
+
+                                // Also send delay time
+                                if (delayTime != null) {
+                                    Intent delayIntent = new Intent("com.minutes");
+                                    delayIntent.putExtra("delayTime", delayTime);
+                                    sendBroadcast(delayIntent);
+                                }
+
+                                Log.e(TAG, "Service started and broadcasts sent");
                                 result.success(null);
                             } else {
                                 result.error("INVALID_ARGUMENT", "URLs are null", null);
@@ -103,9 +134,9 @@ public class MainActivity extends FlutterActivity {
                         case "delayTime":
                             // This handles all the delay time changes
                             delayTime = call.argument("delayTime");
-                            Intent intent = new Intent("com.minutes");
-                            intent.putExtra("delayTime", delayTime);
-                            sendBroadcast(intent);
+                            Intent delayIntent = new Intent("com.minutes");
+                            delayIntent.putExtra("delayTime", delayTime);
+                            sendBroadcast(delayIntent);
                             result.success("Sent delayTime: " + delayTime);
                             break;
 
@@ -121,7 +152,7 @@ public class MainActivity extends FlutterActivity {
 
                             // Get parameters
                             List<String> newUrls = call.argument("urls");
-                            Integer delayTime = call.argument("delayTime");
+                            delayTime = call.argument("delayTime");
 
                             Log.e(TAG, "Restarting service with URLs: " + newUrls);
 
@@ -199,6 +230,8 @@ public class MainActivity extends FlutterActivity {
                 List<String> apiResponses = intent.getStringArrayListExtra("apisResponse");
                 int totalServers = intent.getIntExtra("totalServers", 0);
                 int onlineServers = intent.getIntExtra("onlineServers", 0);
+                boolean isOnline = intent.getBooleanExtra("isOnline", true);
+
 
                 Log.e(TAG, "Received in MainActivity - Responses: " + apiResponses);
 
@@ -208,6 +241,8 @@ public class MainActivity extends FlutterActivity {
                     data.put("apisResponse", apiResponses);
                     data.put("totalServers", totalServers);
                     data.put("onlineServers", onlineServers);
+                    data.put("isOnline", isOnline);
+
                     eventSink.success(data);
                     Log.e(TAG, "Sent to EventSink: " + data);
                 }

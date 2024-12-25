@@ -31,7 +31,7 @@ class HomeVM extends BaseViewModel {
   ThemeMode theme = ThemeMode.dark;
   String? selectedValue;
   late String interval;
-  // bool isInitializeWithOneMin = false;
+  bool isOnline = true;
 
   static const methodChannel =
       MethodChannel('com.aliya.servicespractice/foreground');
@@ -105,44 +105,39 @@ class HomeVM extends BaseViewModel {
 
   Future<void> initialize() async {
     isLoading = true;
-    await _startService();
-    await _sendUrlToAndroid();
+    await startBackgroundService();
     _startListeningToApiStream();
   }
 
-  Future<void> _sendUrlToAndroid() async {
+  Future<void> startBackgroundService() async {
     if (urls.isEmpty) {
       debugPrint("No URLs to send.");
       return;
     }
-    try {
-      await methodChannel
-          .invokeMethod('startForegroundService', {'urls': urls});
-      debugPrint("Sent URL: $urls");
-    } catch (e) {
-      debugPrint("Failed to send URL: $e");
-    }
-  }
 
-  Future<void> _startService() async {
     try {
-      final apisData = await methodChannel.invokeMethod(
-          'startForegroundService',
+      debugPrint("Starting service with delay: $interval and URLs: $urls");
+
+      // Only call startForegroundService once with all necessary parameters
+      final result = await methodChannel.invokeMethod('startForegroundService',
           {'urls': urls, 'delayTime': int.parse(interval)});
-      if (apisData != null && apisData.isNotEmpty) {
-        // serverModels.clear();
-        for (String apiData in apisData) {
+
+      debugPrint("Service start result: $result");
+
+      // Handle initial data if any
+      if (result != null && result is List) {
+        serverModels.clear();
+        for (String apiData in result) {
           serverModel = serverModelFromJson(apiData);
           serverModels.add(serverModel!);
-          isLoading = false;
         }
         notifyListeners();
-        debugPrint("Received all responses from servers first time");
-      } else {
-        debugPrint("No data received from the service.");
+        debugPrint("Processed initial server responses");
       }
     } catch (e) {
-      debugPrint("Failed to get data: $e");
+      debugPrint("Failed to start background service: $e");
+    } finally {
+      isLoading = false;
     }
   }
 
@@ -153,23 +148,26 @@ class HomeVM extends BaseViewModel {
           try {
             totalServers = event['totalServers'] as int;
             onlineServers = event['onlineServers'] as int;
+            isOnline = event['isOnline'] as bool;
             serverModels.clear();
             apiResponses = List<String>.from(event['apisResponse']);
+
             for (var apiResponse in apiResponses) {
               var jsonMap = jsonDecode(apiResponse);
               serverModel = ServerModel.fromJson(jsonMap);
               serverModels.add(serverModel!);
             }
+
             isLoading = false;
             notifyListeners();
-            debugPrint("Total Servers: $totalServers");
-            debugPrint("Online Servers: $onlineServers");
+            debugPrint(
+                "Updated - Total: $totalServers, Online: $onlineServers");
             startTimer();
           } catch (e) {
             debugPrint("Error parsing API response: $e");
           }
         } else {
-          debugPrint("Invalid event type: ${event.runtimeType}");
+          debugPrint("Received invalid event type: ${event.runtimeType}");
         }
       },
       onError: (error) {
