@@ -24,7 +24,7 @@ class HomeVU extends StackedView<HomeVM> {
     if (viewModel.isServiceRunning == true) {
       await viewModel.fetchDataAndStartService();
     } else {
-      await viewModel.fetchDataAndStopService();
+      // await viewModel.fetchDataAndStopService();
     }
   }
 

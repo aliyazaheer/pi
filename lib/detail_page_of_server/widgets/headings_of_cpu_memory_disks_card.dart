@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../detail_page_vm.dart';
 
-Padding headingOfCpuMemoryAndDisksCards(
-    {required DetailPageVM viewModel, required String textOfHeading}) {
+Padding headingOfCpuMemoryAndDisksCards({
+  required DetailPageVM viewModel,
+  required String textOfHeading,
+  String? value,
+}) {
   return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16),
     child: Align(
@@ -19,7 +22,7 @@ Padding headingOfCpuMemoryAndDisksCards(
                   '-',
                 )
               : Text(
-                  '${viewModel.serverModel!.cpu.loadPercentage}%',
+                  value ?? '',
                   style: const TextStyle(fontSize: 16),
                 )
         ],

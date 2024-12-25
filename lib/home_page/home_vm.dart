@@ -30,6 +30,8 @@ class HomeVM extends BaseViewModel {
   bool isServiceRunning = false;
   ThemeMode theme = ThemeMode.dark;
   String? selectedValue;
+  late String interval;
+  // bool isInitializeWithOneMin = false;
 
   static const methodChannel =
       MethodChannel('com.aliya.servicespractice/foreground');
@@ -72,9 +74,33 @@ class HomeVM extends BaseViewModel {
       serverUrl = '$serverUrl/rms/v1/serverHealth';
     }
     debugPrint(serverUrl);
-    debugPrint(serverUrl);
+    interval =
+        await SharedPref.getDelayTimeOfResponse('selectedInterval') ?? '60000';
+    // if (interval == 'Off') {
+    //   interval = '180000';
+    //   isInitializeWithOneMin = true;
+    // }
     urls.add(serverUrl);
     await initialize();
+  }
+
+  addUrlsInListDuringStopService(String serverUrl) async {
+    if (!serverUrl.startsWith('https://')) {
+      serverUrl = 'https://$serverUrl';
+    }
+    if (serverUrl.endsWith('.com') &&
+        !serverUrl.endsWith('/rms/v1/serverHealth')) {
+      serverUrl = '$serverUrl/rms/v1/serverHealth';
+    }
+    debugPrint(serverUrl);
+    interval =
+        await SharedPref.getDelayTimeOfResponse('selectedInterval') ?? '60000';
+    // if (interval == 'Off') {
+    //   interval = '180000';
+    //   isInitializeWithOneMin = true;
+    // }
+    urls.add(serverUrl);
+    // await initialize();
   }
 
   Future<void> initialize() async {
@@ -100,8 +126,9 @@ class HomeVM extends BaseViewModel {
 
   Future<void> _startService() async {
     try {
-      final apisData =
-          await methodChannel.invokeMethod('startForegroundService');
+      final apisData = await methodChannel.invokeMethod(
+          'startForegroundService',
+          {'urls': urls, 'delayTime': int.parse(interval)});
       if (apisData != null && apisData.isNotEmpty) {
         // serverModels.clear();
         for (String apiData in apisData) {
@@ -205,6 +232,7 @@ class HomeVM extends BaseViewModel {
         for (var server in servers) {
           await addServerDetailsList(server);
           addUrlsInList(server.serverUrl);
+          // addUrlsInListDuringStopService(server.serverUrl);
         }
         notifyListeners();
       }
@@ -228,111 +256,99 @@ class HomeVM extends BaseViewModel {
     }
   }
 
-  off() async {
-    if (isServiceRunning) {
-      await methodChannel.invokeMethod('stopForegroundService');
-      serverModels.clear();
-      urls.clear();
-      isLoading = false;
-      debugPrint("Service Stopped");
+  Future<void> off() async {
+    try {
+      if (isServiceRunning) {
+        await methodChannel.invokeMethod('stopForegroundService');
+        serverModel = null;
+        isServiceRunning = false;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint("Failed to stop service: $e");
     }
   }
 
-  void restartServiceWithInterval(String interval) async {
-    if (!isServiceRunning) {
-      debugPrint("Restarting Service...");
-      try {
+  Future<void> restartServiceWithInterval(String interval) async {
+    try {
+      if (!isServiceRunning) {
         final servers = await SharedPref.getSavedServerDetailsList();
-        if (servers.isNotEmpty) {
-          List<String> urls = [];
-          for (var server in servers) {
-            urls.add(server.serverUrl);
+        if (servers.isEmpty) return;
+
+        urls.clear();
+        for (var server in servers) {
+          await addServerDetailsList(server);
+          String serverUrl = server.serverUrl;
+          if (!serverUrl.startsWith('https://')) {
+            serverUrl = 'https://$serverUrl';
           }
-          await methodChannel.invokeMethod('restartForegroundService', {
-            'urls': urls,
-            'interval': interval,
-          });
-          debugPrint("Service Restarted with Interval: $interval");
+          if (serverUrl.endsWith('.com') &&
+              !serverUrl.endsWith('/rms/v1/serverHealth')) {
+            serverUrl = '$serverUrl/rms/v1/serverHealth';
+          }
+          urls.add(serverUrl);
+
+          debugPrint('Restarting service with URLs: $urls');
         }
-      } catch (e) {
-        debugPrint('Error restarting service: $e');
+        // Restart service
+        await methodChannel.invokeMethod('restartForegroundService', {
+          'urls': urls,
+          'delayTime': int.parse(interval),
+        });
+        debugPrint(
+            "++++++++++++++++++++++++++++++++++9999 $urls  +++++++++++++++++++++++999");
+        isServiceRunning = true;
+      } else if (isServiceRunning) {
+        await methodChannel.invokeMethod('stopForegroundService');
+        serverModel = null;
+        isServiceRunning = false;
+        notifyListeners();
+
+        final servers = await SharedPref.getSavedServerDetailsList();
+        if (servers.isEmpty) return;
+
+        urls.clear();
+        for (var server in servers) {
+          await addServerDetailsList(server);
+          String serverUrl = server.serverUrl;
+          if (!serverUrl.startsWith('https://')) {
+            serverUrl = 'https://$serverUrl';
+          }
+          if (serverUrl.endsWith('.com') &&
+              !serverUrl.endsWith('/rms/v1/serverHealth')) {
+            serverUrl = '$serverUrl/rms/v1/serverHealth';
+          }
+          urls.add(serverUrl);
+
+          debugPrint('Restarting service with URLs: $urls');
+        }
+        // Restart service
+        await methodChannel.invokeMethod('restartForegroundService', {
+          'urls': urls,
+          'delayTime': int.parse(interval),
+        });
+        debugPrint(
+            "++++++++++++++++++++++++++++++++++9999 $urls  +++++++++++++++++++++++999");
+        isServiceRunning = true;
+        // Update delay time
+        // await methodChannel
+        //     .invokeMethod('delayTime', {'delayTime': int.parse(interval)});
       }
-      isServiceRunning = true;
+
+      _startListeningToApiStream();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error managing service: $e');
     }
   }
 
   Future<void> initializeSelectedValueOfDelayTime() async {
     selectedValue =
-        await SharedPref.getDelayTimeOfResponse('selectedInterval') ?? 'Off';
+        await SharedPref.getDelayTimeOfResponse('selectedInterval') ?? '60000';
   }
 
-  /// Update the selected value and persist it in SharedPref
   void setSelectedValue(String value) {
     selectedValue = value;
-  }
-
-  oneMin() async {
-    await methodChannel.invokeMethod('delayTime', {'delayTime': 60000});
-    debugPrint("1 minute send");
-  }
-
-  threeMin() async {
-    await methodChannel.invokeMethod('delayTime', {'delayTime': 180000});
-    debugPrint("3 minutes send");
-  }
-
-  fiveMin() async {
-    await methodChannel.invokeMethod('delayTime', {'delayTime': 300000});
-    debugPrint("5 minutes send");
-  }
-
-  sevenMin() async {
-    await methodChannel.invokeMethod('delayTime', {'delayTime': 420000});
-    debugPrint("7 minutes send");
-  }
-
-  tenMin() async {
-    await methodChannel.invokeMethod('delayTime', {'delayTime': 600000});
-    debugPrint("10 minutes send");
-  }
-
-  toggleSwitch() async {
-    try {
-      if (isServiceRunning) {
-        await methodChannel.invokeMethod('stopForegroundService');
-        serverModels.clear();
-        urls.clear();
-        isLoading = false;
-        debugPrint("Service Stopped");
-      } else {
-        isLoading = true;
-        try {
-          final servers = await SharedPref.getSavedServerDetailsList();
-          if (servers.isNotEmpty) {
-            urls.clear();
-            serverModels.clear();
-            for (var server in servers) {
-              await addServerDetailsList(server);
-              addUrlsInList(server.serverUrl);
-            }
-            await methodChannel
-                .invokeMethod('restartForegroundService', {'urls': urls});
-            _startListeningToApiStream();
-          }
-        } catch (e) {
-          debugPrint('Error fetching server details: $e');
-          isLoading = false;
-        }
-        debugPrint("Service Started");
-      }
-      isServiceRunning = !isServiceRunning;
-      await SharedPref.saveSwitchState(isServiceRunning);
-      notifyListeners();
-    } on PlatformException catch (e) {
-      debugPrint("Failed to toggle service: ${e.message}");
-      isLoading = false;
-      notifyListeners();
-    }
   }
 
   initializeSwitchState() async {
@@ -346,6 +362,45 @@ class HomeVM extends BaseViewModel {
     debugPrint('+++isDark =   $theme +++');
     notifyListeners();
   }
+
+  // toggleSwitch() async {
+  //   try {
+  //     if (isServiceRunning) {
+  //       await methodChannel.invokeMethod('stopForegroundService');
+  //       serverModels.clear();
+  //       urls.clear();
+  //       isLoading = false;
+  //       debugPrint("Service Stopped");
+  //     } else {
+  //       isLoading = true;
+  //       try {
+  //         final servers = await SharedPref.getSavedServerDetailsList();
+  //         if (servers.isNotEmpty) {
+  //           urls.clear();
+  //           serverModels.clear();
+  //           for (var server in servers) {
+  //             await addServerDetailsList(server);
+  //             addUrlsInList(server.serverUrl);
+  //           }
+  //           await methodChannel
+  //               .invokeMethod('restartForegroundService', {'urls': urls});
+  //           _startListeningToApiStream();
+  //         }
+  //       } catch (e) {
+  //         debugPrint('Error fetching server details: $e');
+  //         isLoading = false;
+  //       }
+  //       debugPrint("Service Started");
+  //     }
+  //     isServiceRunning = !isServiceRunning;
+  //     await SharedPref.saveSwitchState(isServiceRunning);
+  //     notifyListeners();
+  //   } on PlatformException catch (e) {
+  //     debugPrint("Failed to toggle service: ${e.message}");
+  //     isLoading = false;
+  //     notifyListeners();
+  //   }
+  // }
 
   // fetchServerModel(String serverUrl) async {
   //   isLoading = true;

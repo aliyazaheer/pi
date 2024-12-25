@@ -30,6 +30,8 @@ public class MainActivity extends FlutterActivity {
     private static final String EVENT_CHANNEL = "com.aliya.servicespractice/counterStream";
     private EventChannel.EventSink eventSink;
     static final int ERROR_NOTIFICATION_ID = 1001;
+    private Integer delayTime; // Use Integer instead of int
+
 
 
     @SuppressLint("NewApi")
@@ -46,7 +48,6 @@ public class MainActivity extends FlutterActivity {
                 startService(serviceIntent);
             }
         }
-
 
         // Register the receiver for API data updates
         IntentFilter filter = new IntentFilter("com.aliya.TO_GET_API_DATA");
@@ -101,7 +102,7 @@ public class MainActivity extends FlutterActivity {
 
                         case "delayTime":
                             // This handles all the delay time changes
-                            int delayTime = call.argument("delayTime");
+                            delayTime = call.argument("delayTime");
                             Intent intent = new Intent("com.minutes");
                             intent.putExtra("delayTime", delayTime);
                             sendBroadcast(intent);
@@ -115,26 +116,42 @@ public class MainActivity extends FlutterActivity {
                             break;
 
                         case "restartForegroundService":
-                            // First ensure the service is stopped
+                            // Stop existing service
                             stopService(new Intent(this, ForegroundService.class));
 
-                            // Start the service again
+                            // Get parameters
+                            List<String> newUrls = call.argument("urls");
+                            Integer delayTime = call.argument("delayTime");
+
+                            Log.e(TAG, "Restarting service with URLs: " + newUrls);
+
+                            // Start service with both delay time and URLs
                             Intent serviceIntent = new Intent(this, ForegroundService.class);
+                            if (delayTime != null) {
+                                serviceIntent.putExtra("delayTime", delayTime);
+                            }
+                            if (newUrls != null) {
+                                serviceIntent.putStringArrayListExtra("urls", new ArrayList<>(newUrls));
+                            }
+
+                            // Start the service
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                 startForegroundService(serviceIntent);
                             } else {
                                 startService(serviceIntent);
                             }
 
-                            // Handle URLs if provided
-                            List<String> newUrls = call.argument("urls");
+                            // Also send URLs via broadcast to ensure they're received
                             if (newUrls != null) {
                                 Intent urlIntent = new Intent("com.aliya.SEND_URL");
                                 urlIntent.putStringArrayListExtra("urls", new ArrayList<>(newUrls));
                                 sendBroadcast(urlIntent);
+                                Log.e(TAG, "Broadcast sent with URLs: " + newUrls);
                             }
+
                             result.success("Service Restarted");
                             break;
+
                         case "updateServiceUrls":
                             List<String> updatedUrls = call.argument("urls");
                             if (updatedUrls != null) {

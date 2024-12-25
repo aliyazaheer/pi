@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
+import '../common_widgets/average_of_disks_percentage.dart';
 import '../common_widgets/glow_of_cards.dart';
 import '../models/server_details.dart';
 import 'detail_page_vm.dart';
@@ -11,7 +12,7 @@ import 'widgets/memory_card.dart';
 import '../common_widgets/space.dart';
 import 'widgets/padding_of_cards.dart';
 import 'widgets/url_card.dart';
-import 'widgets/webview_card.dart';
+import 'widgets/webview_card_widget.dart';
 
 class DetailPageVU extends StackedView<DetailPageVM> {
   final ServerDetails? serverDetails;
@@ -66,7 +67,9 @@ class DetailPageVU extends StackedView<DetailPageVM> {
             ),
             spaceY(heightValue: 10),
             headingOfCpuMemoryAndDisksCards(
-                viewModel: viewModel, textOfHeading: 'CPUs'),
+                viewModel: viewModel,
+                textOfHeading: 'CPUs',
+                value: '${viewModel.serverModel!.cpu.loadPercentage}%'),
             paddingOfCards(
                 viewModel: viewModel,
                 glowOfCard: glowOfCard(
@@ -74,7 +77,10 @@ class DetailPageVU extends StackedView<DetailPageVM> {
                 )),
             spaceY(heightValue: 10),
             headingOfCpuMemoryAndDisksCards(
-                viewModel: viewModel, textOfHeading: 'Memory:'),
+              viewModel: viewModel,
+              textOfHeading: 'Memory:',
+              value: '${viewModel.serverModel!.memory.percentage}%',
+            ),
             paddingOfCards(
                 viewModel: viewModel,
                 glowOfCard: glowOfCard(
@@ -82,13 +88,19 @@ class DetailPageVU extends StackedView<DetailPageVM> {
                 )),
             spaceY(heightValue: 10),
             headingOfCpuMemoryAndDisksCards(
-                viewModel: viewModel, textOfHeading: 'Disks:'),
+              viewModel: viewModel,
+              textOfHeading: 'Disks:',
+              value:
+                  '${findingAverageOfDisksPercentages(viewModel.serverModel!)}%',
+            ),
             paddingOfCards(
                 viewModel: viewModel,
                 glowOfCard: glowOfCard(
                   cardFunction: disksCard(context, viewModel),
                 )),
             spaceY(heightValue: 10),
+            headingOfCpuMemoryAndDisksCards(
+                viewModel: viewModel, textOfHeading: 'Web App:'),
             paddingOfCards(
                 viewModel: viewModel,
                 glowOfCard: glowOfCard(
@@ -97,6 +109,8 @@ class DetailPageVU extends StackedView<DetailPageVM> {
                       url: 'https://umair-stable.smartclinicpk.com'),
                 )),
             spaceY(heightValue: 10),
+            headingOfCpuMemoryAndDisksCards(
+                viewModel: viewModel, textOfHeading: 'Swagger Page:'),
             paddingOfCards(
                 viewModel: viewModel,
                 glowOfCard: glowOfCard(
@@ -105,12 +119,6 @@ class DetailPageVU extends StackedView<DetailPageVM> {
                       url:
                           'https://umair-stable.smartclinicpk.com/rms/v1/swagger'),
                 )),
-            // paddingOfCards(
-            //     viewModel: viewModel,
-            //     glowOfCard: glowOfCard(
-            //       cardFunction: webViewCard(context, viewModel,
-            //           'https://umair-stable.smartclinicpk.com/rms/v1/swagger'),
-            //     )),
           ]
         ])));
   }

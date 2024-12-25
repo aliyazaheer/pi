@@ -38,7 +38,7 @@ class _WebViewCardWidgetState extends State<WebViewCardWidget> {
             if (mounted) {
               setState(() {
                 // You can use this progress value to show a progress indicator
-                widget.viewModel.updateWebViewLoadingProgress(progress);
+                // widget.viewModel.updateWebViewLoadingProgress(progress);
               });
             }
           },
@@ -47,7 +47,7 @@ class _WebViewCardWidgetState extends State<WebViewCardWidget> {
               setState(() {
                 isLoading = true;
                 errorMessage = null;
-                widget.viewModel.setWebViewLoading(true);
+                // widget.viewModel.setWebViewLoading(true);
               });
             }
           },
@@ -55,7 +55,7 @@ class _WebViewCardWidgetState extends State<WebViewCardWidget> {
             if (mounted) {
               setState(() {
                 isLoading = false;
-                widget.viewModel.setWebViewLoading(false);
+                // widget.viewModel.setWebViewLoading(false);
               });
             }
           },
@@ -98,10 +98,12 @@ class _WebViewCardWidgetState extends State<WebViewCardWidget> {
           child: Stack(
             children: [
               WebViewWidget(controller: controller),
-              if (isLoading)
-                const Center(
-                  child: CircularProgressIndicator(),
-                ),
+              // if (isLoading &&
+              //     errorMessage ==
+              //         null) // Display only when loading and no error
+              //   const Center(
+              //     child: CircularProgressIndicator(),
+              //   ),
               if (errorMessage != null)
                 Center(
                   child: Padding(

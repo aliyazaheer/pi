@@ -17,6 +17,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -49,7 +50,7 @@ public class ForegroundService extends Service {
     private MediaPlayer mediaPlayer;
     private static ForegroundService instance;
     private boolean firstTimeAlarmDuringDown;
-    private int delayTime = 5000;
+    private int delayTime = 60000;
 
     @SuppressLint("NewApi")
     public void onCreate() {
@@ -67,27 +68,20 @@ public class ForegroundService extends Service {
     private final BroadcastReceiver delayUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if ("com.minutes".equals(intent.getAction()) && intent.hasExtra("delayTime")) {
-                int newDelayTime = intent.getIntExtra("delayTime", 5000);
+            if ("com.minutes".equals(intent.getAction())) {
+                int newDelayTime = intent.getIntExtra("delayTime", 60000);
                 updateDelayTime(newDelayTime);
-                Log.e(TAG, "Delay time updated and rescheduled: " + newDelayTime);
             }
         }
     };
-
-    // Method to handle delay time updates
     private void updateDelayTime(int newDelayTime) {
         delayTime = newDelayTime;
+        Log.e(TAG, "Updating delay time to: " + delayTime);
 
-        // Remove any pending callbacks
         if (handler != null && runnable != null) {
             handler.removeCallbacks(runnable);
-        }
-
-        // Reschedule with new delay time
-        if (runnable != null) {
             handler.postDelayed(runnable, delayTime);
-            Log.e(TAG, "Rescheduled runnable with new delay: " + delayTime);
+            Log.e(TAG, "Rescheduled with new delay time");
         }
     }
 
@@ -101,11 +95,38 @@ public class ForegroundService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.e(TAG, "Foreground Service Started...");
 
-        // Register the receiver to update URL
-        IntentFilter filter = new IntentFilter("com.aliya.SEND_URL");
-        registerReceiver(urlUpdateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        // Initialize handler if null
+        if (handler == null) {
+            handler = new Handler(Looper.getMainLooper());
+        }
 
-        handler = new Handler();
+//        // Initialize runnable
+//        runnable = new Runnable() {
+//            @Override
+//            public void run() {
+//                Log.e(TAG, "Runnable executing, URLs: " + urls);
+//                if (urls != null && !urls.isEmpty()) {
+//                    processUrls();
+//                } else {
+//                    Log.e(TAG, "No URLs available to process");
+//                }
+//                handler.postDelayed(this, delayTime);
+//            }
+//        };
+
+        // Get URLs from intent if provided
+        if (intent != null && intent.hasExtra("urls")) {
+            urls = intent.getStringArrayListExtra("urls");
+            totalServers = urls.size();
+            Log.e(TAG, "Received URLs in onStartCommand: " + urls);
+        }
+
+        // Get delay time from intent if provided
+        if (intent != null && intent.hasExtra("delayTime")) {
+            delayTime = intent.getIntExtra("delayTime", 60000);
+            Log.e(TAG, "Setting delay time from intent: " + delayTime);
+        }
+        // Initialize runnable
         runnable = new Runnable() {
             @Override
             public void run() {
@@ -118,10 +139,54 @@ public class ForegroundService extends Service {
                 handler.postDelayed(this, delayTime);
             }
         };
-        handler.post(runnable);
 
         // Start foreground notification
         startForeground(1001, createNotification());
+
+        // Start periodic checks immediately if we have URLs
+        if (urls != null && !urls.isEmpty()) {
+            handler.removeCallbacks(runnable);
+            handler.post(runnable);
+            Log.e(TAG, "Started URL processing with " + urls.size() + " URLs");
+        }
+
+
+        // Start foreground notification
+//        startForeground(1001, createNotification());
+
+        // Start periodic checks
+//        handler.removeCallbacks(runnable); // Remove any existing callbacks
+//        handler.post(runnable);
+//        Log.e(TAG, "Foreground Service Started...");
+//
+//        // Register the receiver to update URL
+//        IntentFilter filter = new IntentFilter("com.aliya.SEND_URL");
+//        registerReceiver(urlUpdateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+//
+//        handler = new Handler();
+//        runnable = new Runnable() {
+//            @Override
+//            public void run() {
+//                Log.e(TAG, "Runnable executing, URLs: " + urls);
+//                if (urls != null && !urls.isEmpty()) {
+//                    processUrls();
+//                } else {
+//                    Log.e(TAG, "No URLs available to process");
+//                }
+//                handler.postDelayed(this, delayTime);
+//            }
+//        };
+//        handler.post(runnable);
+//
+//        // Start foreground notification
+//        startForeground(1001, createNotification());
+//        if (handler != null && runnable != null) {
+//            handler.removeCallbacks(runnable);
+//            handler.postDelayed(runnable, delayTime);
+//        }
+
+
+
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel errorChannel = new NotificationChannel(
@@ -150,55 +215,61 @@ public class ForegroundService extends Service {
             notificationManager.createNotificationChannel(errorChannel);
         }
 
-        return START_STICKY;
+        return START_NOT_STICKY;
     }
 
 
     // Receive URL updates from MainActivity
+//    private final BroadcastReceiver urlUpdateReceiver = new BroadcastReceiver() {
+//        @Override
+//        public void onReceive(Context context, Intent intent) {
+//            if (intent != null) {
+//                String action = intent.getAction();
+//                if ("com.aliya.SEND_URL".equals(action) && intent.hasExtra("urls")) {
+//                    urls = intent.getStringArrayListExtra("urls");
+//                    Log.e(TAG, "Received updated URLs in Service: " + urls);
+//
+//                    // Update counts immediately
+//                    totalServers = urls.size();
+//                    onlineServers = 0; // Reset online count before new processing
+//
+//                    // Update notification immediately with new total
+//                    updateNotification();
+//
+//                    // Then process URLs
+//                    processUrls();
+//
+//                    Log.e(TAG, "Updated counts - Total: " + totalServers + ", Online: " + onlineServers);
+//                }
+////                if ("com.minutes".equals(action) && intent.hasExtra("delayTime")) {
+////                    delayTime = intent.getIntExtra("delayTime", 60000);
+////                    Log.e(TAG, "Updated delayTime to: " + delayTime);
+////                }
+//
+//            }
+//        }
+//    };
     private final BroadcastReceiver urlUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent != null) {
-                String action = intent.getAction();
-                if ("com.aliya.SEND_URL".equals(action) && intent.hasExtra("urls")) {
-                    urls = intent.getStringArrayListExtra("urls");
+            if (intent != null && "com.aliya.SEND_URL".equals(intent.getAction())) {
+                ArrayList<String> newUrls = intent.getStringArrayListExtra("urls");
+                if (newUrls != null) {
+                    urls = newUrls;
+                    totalServers = urls.size();
+                    onlineServers = 0;
                     Log.e(TAG, "Received updated URLs in Service: " + urls);
 
-                    // Update counts immediately
-                    totalServers = urls.size();
-                    onlineServers = 0; // Reset online count before new processing
-
-                    // Update notification immediately with new total
-                    updateNotification();
-
-                    // Then process URLs
+                    // Process URLs immediately
                     processUrls();
 
-                    Log.e(TAG, "Updated counts - Total: " + totalServers + ", Online: " + onlineServers);
+                    // Update notification
+                    updateNotification();
                 }
-                if ("com.minutes".equals(action) && intent.hasExtra("delayTime")) {
-                    delayTime = intent.getIntExtra("delayTime", 5000); // Default to 5000 if not set
-                    Log.e(TAG, "Updated delayTime to: " + delayTime);
-                }
-
             }
         }
     };
-    public class StopAlarmReceiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            ForegroundService service = ForegroundService.getInstance();
-            if (service != null) {
-                service.stopAlarmSound(); // Stop the alarm sound
-            }
 
-            // Clear the notification
-            NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-            if (notificationManager != null) {
-                notificationManager.cancel(ForegroundService.ERROR_NOTIFICATION_ID);
-            }
-        }
-    }
 
 
     private void processUrls() {
@@ -272,7 +343,8 @@ public class ForegroundService extends Service {
                 // Update notification with server status
                 updateNotification();
                 if (hasError && !firstTimeAlarmDuringDown) {
-                    showErrorNotification();
+//                    showErrorNotification();
+                    checkGoogleAndNotify();
                 } else {
                     removeErrorNotification();
                 }
@@ -420,15 +492,11 @@ public class ForegroundService extends Service {
         if (handler != null) {
             handler.removeCallbacks(runnable);
         }
-        if (urlUpdateReceiver != null) {
-            unregisterReceiver(urlUpdateReceiver);
-        }
-        unregisterReceiver(new StopAlarmReceiver());
         try {
             unregisterReceiver(urlUpdateReceiver);
             unregisterReceiver(delayUpdateReceiver);
-        } catch (IllegalArgumentException e) {
-            Log.e(TAG, "Receiver not registered", e);
+        } catch (Exception e) {
+            Log.e(TAG, "Error unregistering receivers", e);
         }
 
         urls.clear();
