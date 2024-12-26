@@ -52,7 +52,7 @@ public class ForegroundService extends Service {
     private boolean firstTimeAlarmDuringDown;
     private int delayTime = 60000;
    private boolean isOnline=true;
-   private static final String STOP_ALARM_ACTION = "com.aliya.STOP_ALARM";
+    public static final String STOP_ALARM_ACTION = "com.aliya.servicespractice.flutter_platform_integration.STOP_ALARM";
 
 
     @SuppressLint("NewApi")
@@ -166,6 +166,10 @@ public class ForegroundService extends Service {
             errorChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
 
             notificationManager.createNotificationChannel(errorChannel);
+            if (intent != null && STOP_ALARM_ACTION.equals(intent.getAction())) {
+                stopAlarmSound();
+                return START_NOT_STICKY;
+            }
         }
 
         return START_NOT_STICKY;
@@ -225,6 +229,7 @@ public class ForegroundService extends Service {
                             }
                             in.close();
                             firstTimeAlarmDuringDown=false;
+                            isOnline=true;
 
                             String responseString = response.toString();
                             Log.e(TAG, "Response for " + urlString + ": " + responseString);
@@ -264,9 +269,9 @@ public class ForegroundService extends Service {
                 // Update notification with server status
                 updateNotification();
                 if (hasError && !firstTimeAlarmDuringDown) {
-                    showErrorNotification();
+//                    showErrorNotification();
                     isOnline=false;
-//                    checkGoogleAndNotify();
+                    checkGoogleAndNotify();
                 } else {
                     removeErrorNotification();
                 }
@@ -299,34 +304,44 @@ public class ForegroundService extends Service {
         }).start();
     }
 
-    private void showErrorNotification() {
-        Intent notificationIntent = new Intent(this, MainActivity.class);
-        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+// In your service class, modify the showErrorNotification method:
+private void showErrorNotification() {
+    // Intent for opening the app
+    Intent notificationIntent = new Intent(this, MainActivity.class);
+    notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this, 0, notificationIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-        Intent stopAlarmIntent = new Intent(STOP_ALARM_ACTION);
-        PendingIntent stopAlarmPendingIntent = PendingIntent.getBroadcast(
-                this,
-                0,
-                stopAlarmIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
+    PendingIntent pendingIntent = PendingIntent.getActivity(
+            this, 0, notificationIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+    );
 
+    // Intent for stopping the alarm
+    Intent stopAlarmIntent = new Intent(STOP_ALARM_ACTION);
+    PendingIntent stopAlarmPendingIntent = PendingIntent.getBroadcast(
+            this,
+            0,
+            stopAlarmIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+    );
 
-        @SuppressLint({"NewApi", "LocalSuppress"}) Notification notification = new Notification.Builder(this, ERROR_CHANNEL_ID)
-                .setContentTitle("Server Error")
-                .setContentText("One or more servers are not responding")
-                .setSmallIcon(R.drawable.companylogo)
-                .setContentIntent(stopAlarmPendingIntent)
-                .setAutoCancel(true)
-                .build();
+    @SuppressLint({"NewApi", "LocalSuppress"})
+    Notification notification = new Notification.Builder(this, ERROR_CHANNEL_ID)
+            .setContentTitle("Server Error")
+            .setContentText("One or more servers are not responding")
+            .setSmallIcon(R.drawable.companylogo)
+            .setContentIntent(pendingIntent)  // Opens app when notification is tapped
+            .addAction(new Notification.Action.Builder(
+                    null,
+                    "Stop Alarm",
+                    stopAlarmPendingIntent
+            ).build())
+            .setAutoCancel(true)
+            .build();
 
-        notificationManager.notify(ERROR_NOTIFICATION_ID, notification);
-        playAlarmSound();
-    }
+    notificationManager.notify(ERROR_NOTIFICATION_ID, notification);
+    playAlarmSound();
+}
+
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {

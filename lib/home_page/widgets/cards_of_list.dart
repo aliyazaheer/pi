@@ -4,6 +4,9 @@ import '../home_vm.dart';
 import 'popup_menu_button.dart';
 
 Card cardsOfList(HomeVM viewModel, int index, BuildContext context) {
+  viewModel.isOnline == false
+      ? viewModel.serverModel = null
+      : viewModel.serverModel;
   return Card(
     elevation: 10,
     color: Theme.of(context).brightness == Brightness.dark
