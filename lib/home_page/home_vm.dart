@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:stacked/stacked.dart';
 import '../models/server_details.dart';
 import '../models/server_model.dart';
@@ -31,7 +32,7 @@ class HomeVM extends BaseViewModel {
   ThemeMode theme = ThemeMode.dark;
   String? selectedValue;
   late String interval;
-  bool isOnline = true;
+  late bool isOnline = true;
 
   static const methodChannel =
       MethodChannel('com.aliya.servicespractice/foreground');
@@ -74,8 +75,7 @@ class HomeVM extends BaseViewModel {
       serverUrl = '$serverUrl/rms/v1/serverHealth';
     }
     debugPrint(serverUrl);
-    interval =
-        await SharedPref.getDelayTimeOfResponse('selectedInterval') ?? '60000';
+    interval = await SharedPref.getDelayTimeOfResponse() ?? '60000';
     // if (interval == 'Off') {
     //   interval = '180000';
     //   isInitializeWithOneMin = true;
@@ -93,8 +93,7 @@ class HomeVM extends BaseViewModel {
       serverUrl = '$serverUrl/rms/v1/serverHealth';
     }
     debugPrint(serverUrl);
-    interval =
-        await SharedPref.getDelayTimeOfResponse('selectedInterval') ?? '60000';
+    interval = await SharedPref.getDelayTimeOfResponse() ?? '60000';
     // if (interval == 'Off') {
     //   interval = '180000';
     //   isInitializeWithOneMin = true;
@@ -116,6 +115,7 @@ class HomeVM extends BaseViewModel {
     }
 
     try {
+      interval = (await SharedPref.getDelayTimeOfResponse()) ?? '60000';
       debugPrint("Starting service with delay: $interval and URLs: $urls");
 
       // Only call startForegroundService once with all necessary parameters
@@ -135,7 +135,10 @@ class HomeVM extends BaseViewModel {
         debugPrint("Processed initial server responses");
       }
     } catch (e) {
-      debugPrint("Failed to start background service: $e");
+      debugPrint("Failed to start service: $e");
+      Fluttertoast.showToast(
+        msg: "Failed to start service",
+      );
     } finally {
       isLoading = false;
     }
@@ -173,6 +176,9 @@ class HomeVM extends BaseViewModel {
       onError: (error) {
         debugPrint("Stream error: $error");
         isLoading = false;
+        Fluttertoast.showToast(
+          msg: "Unable to fetch response.",
+        );
       },
     );
   }
@@ -205,20 +211,53 @@ class HomeVM extends BaseViewModel {
   }
 
   updateAndroidAboutUrls(int index) async {
-    final servers = await SharedPref.getSavedServerDetailsList();
-    if (servers.isNotEmpty) {
-      urls.clear();
-      serverModels.clear();
-      for (var server in servers) {
-        await addServerDetailsList(server);
-        addUrlsInList(server.serverUrl);
-      }
-      notifyListeners();
+    try {
       if (isServiceRunning) {
-        await methodChannel.invokeMethod('updateServiceUrls', {'urls': urls});
-        _startListeningToApiStream();
+        await methodChannel.invokeMethod('stopForegroundService');
+        serverModel = null;
+        isServiceRunning = false;
+        notifyListeners();
+
+        final servers = await SharedPref.getSavedServerDetailsList();
+        if (servers.isEmpty) {
+          debugPrint('No servers found in SharedPreferences');
+          return;
+        }
+
+        urls.clear();
+        for (var server in servers) {
+          await addServerDetailsList(server);
+          String serverUrl = server.serverUrl;
+
+          // URL formatting
+          if (!serverUrl.startsWith('https://')) {
+            serverUrl = 'https://$serverUrl';
+          }
+          if (serverUrl.endsWith('.com') &&
+              !serverUrl.endsWith('/rms/v1/serverHealth')) {
+            serverUrl = '$serverUrl/rms/v1/serverHealth';
+          }
+          urls.add(serverUrl);
+        }
+        interval = (await SharedPref.getDelayTimeOfResponse()) ?? '60000';
+
+        debugPrint('Updating service with URLs: $urls');
+        debugPrint('Using delay time: $interval milliseconds');
+
+        // Call native method to update service
+        final result = await methodChannel.invokeMethod('updateServiceUrls', {
+          'urls': urls,
+          'delayTime': int.parse(interval),
+        });
+
+        debugPrint('Service update result: $result');
+        isServiceRunning = true;
       }
+      _startListeningToApiStream();
       notifyListeners();
+    } catch (e) {
+      debugPrint('Error updating service: $e');
+      // Handle error appropriately
     }
   }
 
@@ -341,8 +380,7 @@ class HomeVM extends BaseViewModel {
   }
 
   Future<void> initializeSelectedValueOfDelayTime() async {
-    selectedValue =
-        await SharedPref.getDelayTimeOfResponse('selectedInterval') ?? '60000';
+    selectedValue = await SharedPref.getDelayTimeOfResponse() ?? '60000';
   }
 
   void setSelectedValue(String value) {

@@ -185,19 +185,27 @@ public class MainActivity extends FlutterActivity {
 
                         case "updateServiceUrls":
                             List<String> updatedUrls = call.argument("urls");
-                            if (updatedUrls != null) {
-                                // Send updated URLs to service
-                                Intent updateIntent = new Intent("com.aliya.SEND_URL");
-                                updateIntent.putStringArrayListExtra("urls", new ArrayList<>(updatedUrls));
-                                sendBroadcast(updateIntent);
+                            delayTime = call.argument("delayTime");
 
-                                // Force service to process new URLs immediately
-                                Intent refreshIntent = new Intent("com.aliya.REFRESH_SERVICE");
-                                sendBroadcast(refreshIntent);
+                            if (updatedUrls != null && delayTime != null) {
+                                // Create intent to update service
+                                Intent updateServiceIntent = new Intent(this, ForegroundService.class);
+                                updateServiceIntent.putStringArrayListExtra("urls", new ArrayList<>(updatedUrls));
+                                updateServiceIntent.putExtra("delayTime", delayTime);
 
-                                result.success("URLs updated");
+                                // Stop existing service
+                                stopService(updateServiceIntent);
+
+                                // Start service with new parameters
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    startForegroundService(updateServiceIntent);
+                                } else {
+                                    startService(updateServiceIntent);
+                                }
+
+                                result.success("Service updated with new URLs and delay time");
                             } else {
-                                result.error("INVALID_ARGUMENT", "Updated URLs are null", null);
+                                result.error("INVALID_ARGUMENT", "Updated URLs or delay time is null", null);
                             }
                             break;
 

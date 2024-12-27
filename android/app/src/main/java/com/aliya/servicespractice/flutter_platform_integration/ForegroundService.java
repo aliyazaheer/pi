@@ -116,6 +116,7 @@ public class ForegroundService extends Service {
             delayTime = intent.getIntExtra("delayTime", 60000);
             Log.e(TAG, "Setting delay time from intent: " + delayTime);
         }
+
         // Initialize runnable
         runnable = new Runnable() {
             @Override

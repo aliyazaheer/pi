@@ -43,7 +43,7 @@ class DetailPageVM extends BaseViewModel {
     } catch (e) {
       errorInFetchingData = "Failed to fetch server data";
       debugPrint("Failed to fetch server data");
-      Fluttertoast.showToast(msg: errorInFetchingData!);
+      // Fluttertoast.showToast(msg: errorInFetchingData!);
       serverModel = null;
     } finally {
       isLoading = false;

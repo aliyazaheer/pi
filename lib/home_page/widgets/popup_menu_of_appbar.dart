@@ -59,7 +59,7 @@ PopupMenuButton<String> popUpMenuOfAppBar(
     icon: const Icon(Icons.more_vert),
     onSelected: (String value) async {
       viewModel.setSelectedValue(value);
-      await SharedPref.setDelayTimeOfResponse('selectedInterval', value);
+      await SharedPref.setDelayTimeOfResponse('selectedInterval');
 
       if (value == 'Off') {
         await viewModel.off();

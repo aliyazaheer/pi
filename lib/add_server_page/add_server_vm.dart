@@ -76,9 +76,9 @@ class AddServerVM extends BaseViewModel {
         isUp = true;
       } else {
         debugPrint('no server data available...................');
-        Fluttertoast.showToast(
-          msg: "No server data available for this URL",
-        );
+        // Fluttertoast.showToast(
+        //   msg: "No server data available for this URL",
+        // );
       }
 
       notifyListeners();
