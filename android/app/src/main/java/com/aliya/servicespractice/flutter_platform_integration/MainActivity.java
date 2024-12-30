@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -42,6 +43,15 @@ public class MainActivity extends FlutterActivity {
         // Start the ForegroundService
         if (!isServiceRunning(this, ForegroundService.class)) {
             Intent serviceIntent = new Intent(this, ForegroundService.class);
+// Add foreground service type for Android 11 (API 30) and above
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                // Set the foreground service type as an extra
+                serviceIntent.putExtra("foregroundServiceType",
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);  // Adjust type as needed
+            }
+
+
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(serviceIntent);
             } else {
@@ -91,14 +101,18 @@ public class MainActivity extends FlutterActivity {
                             Log.e(TAG, "Starting service with URLs: " + urls + " and delay: " + delayTime);
 
                             if (urls != null) {
-                                // First ensure service is started with proper initialization
                                 Intent serviceIntent = new Intent(this, ForegroundService.class);
                                 serviceIntent.putStringArrayListExtra("urls", new ArrayList<>(urls));
                                 if (delayTime != null) {
                                     serviceIntent.putExtra("delayTime", delayTime);
                                 }
 
-                                // Start service
+                                // Add foreground service type for Android 11+
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                    serviceIntent.putExtra("foregroundServiceType",
+                                            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+                                }
+
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                     startForegroundService(serviceIntent);
                                 } else {
@@ -149,6 +163,12 @@ public class MainActivity extends FlutterActivity {
                         case "restartForegroundService":
                             // Stop existing service
                             stopService(new Intent(this, ForegroundService.class));
+                            try {
+                            Thread.sleep(200);
+                        } catch (InterruptedException e) {
+                            Log.e(TAG, "Sleep interrupted", e);
+                        }
+
 
                             // Get parameters
                             List<String> newUrls = call.argument("urls");
@@ -157,26 +177,45 @@ public class MainActivity extends FlutterActivity {
                             Log.e(TAG, "Restarting service with URLs: " + newUrls);
 
                             // Start service with both delay time and URLs
-                            Intent serviceIntent = new Intent(this, ForegroundService.class);
+                            Intent restartIntent = new Intent(this, ForegroundService.class);
                             if (delayTime != null) {
-                                serviceIntent.putExtra("delayTime", delayTime);
+                                restartIntent.putExtra("delayTime", delayTime);
                             }
                             if (newUrls != null) {
-                                serviceIntent.putStringArrayListExtra("urls", new ArrayList<>(newUrls));
+                                restartIntent.putStringArrayListExtra("urls", new ArrayList<>(newUrls));
                             }
 
-                            // Start the service
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                startForegroundService(serviceIntent);
-                            } else {
-                                startService(serviceIntent);
+                            // Add foreground service type for Android 11+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                restartIntent.putExtra("foregroundServiceType",
+                                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
                             }
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                startForegroundService(restartIntent);
+                            } else {
+                                startService(restartIntent);
+                            }
+                            // Small delay to ensure service is started
+                            try {
+                                Thread.sleep(100);
+                            } catch (InterruptedException e) {
+                                Log.e(TAG, "Sleep interrupted", e);
+                            }
+
 
                             // Also send URLs via broadcast to ensure they're received
                             if (newUrls != null) {
                                 Intent urlIntent = new Intent("com.aliya.SEND_URL");
                                 urlIntent.putStringArrayListExtra("urls", new ArrayList<>(newUrls));
                                 sendBroadcast(urlIntent);
+                                // Send delay broadcast if present
+                                if (delayTime != null) {
+                                    delayIntent = new Intent("com.minutes");
+                                    delayIntent.putExtra("delayTime", delayTime);
+                                    sendBroadcast(delayIntent);
+                                }
+
                                 Log.e(TAG, "Broadcast sent with URLs: " + newUrls);
                             }
 
@@ -193,15 +232,33 @@ public class MainActivity extends FlutterActivity {
                                 updateServiceIntent.putStringArrayListExtra("urls", new ArrayList<>(updatedUrls));
                                 updateServiceIntent.putExtra("delayTime", delayTime);
 
-                                // Stop existing service
+                                // Add foreground service type for Android 11+
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                    updateServiceIntent.putExtra("foregroundServiceType",
+                                            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+                                }
+
                                 stopService(updateServiceIntent);
 
-                                // Start service with new parameters
+                                try {
+                                    Thread.sleep(200);
+                                } catch (InterruptedException e) {
+                                    Log.e(TAG, "Sleep interrupted", e);
+                                }
+
+
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                     startForegroundService(updateServiceIntent);
                                 } else {
                                     startService(updateServiceIntent);
                                 }
+                                // Small delay to ensure service is started
+                                try {
+                                    Thread.sleep(100);
+                                } catch (InterruptedException e) {
+                                    Log.e(TAG, "Sleep interrupted", e);
+                                }
+
 
                                 result.success("Service updated with new URLs and delay time");
                             } else {
@@ -239,6 +296,7 @@ public class MainActivity extends FlutterActivity {
                 int totalServers = intent.getIntExtra("totalServers", 0);
                 int onlineServers = intent.getIntExtra("onlineServers", 0);
                 boolean isOnline = intent.getBooleanExtra("isOnline", true);
+                boolean alarmDone = intent.getBooleanExtra("alarmDone", false);
 
 
                 Log.e(TAG, "Received in MainActivity - Responses: " + apiResponses);
@@ -250,6 +308,7 @@ public class MainActivity extends FlutterActivity {
                     data.put("totalServers", totalServers);
                     data.put("onlineServers", onlineServers);
                     data.put("isOnline", isOnline);
+                    data.put("alarmDone", alarmDone);
 
                     eventSink.success(data);
                     Log.e(TAG, "Sent to EventSink: " + data);

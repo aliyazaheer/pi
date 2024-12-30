@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../home_vm.dart';
+import '../detail_page_vm.dart';
 
-Row countOnlineOfAppBar(BuildContext context, HomeVM viewModel) {
+Row onlineStatus(DetailPageVM viewModel, BuildContext context) {
   return Row(
     children: [
       Container(
@@ -13,15 +13,14 @@ Row countOnlineOfAppBar(BuildContext context, HomeVM viewModel) {
                 ? Theme.of(context).brightness == Brightness.dark
                     ? const Color(0xFFF5F5F5)
                     : const Color(0xFF222832)
-                : viewModel.onlineServers < viewModel.serverDetails.length
+                : viewModel.serverModel == null
                     ? Colors.red
                     : Colors.green,
           )),
       const SizedBox(
         width: 5,
       ),
-      Text(
-          '${viewModel.onlineServers} of ${viewModel.totalServers == 0 ? viewModel.serverDetails.length : viewModel.totalServers} Online - ${viewModel.counter == 0 ? viewModel.isLoading == false && viewModel.serverModel != null ? viewModel.justNow : '' : viewModel.countSec}',
+      Text(viewModel.serverModel == null ? 'Offline' : 'Online',
           style: const TextStyle(fontSize: 10))
     ],
   );

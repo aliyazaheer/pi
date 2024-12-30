@@ -10,6 +10,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.content.pm.ServiceInfo;
 import android.media.AudioAttributes;
 import android.media.MediaPlayer;
 import android.media.RingtoneManager;
@@ -49,10 +51,16 @@ public class ForegroundService extends Service {
     private boolean isErrorNotificationShowing = false;
     private MediaPlayer mediaPlayer;
     private static ForegroundService instance;
-    private boolean firstTimeAlarmDuringDown;
+    private boolean firstTimeAlarmDuringDown=false;
     private int delayTime = 60000;
    private boolean isOnline=true;
+   private boolean alarmDone;
     public static final String STOP_ALARM_ACTION = "com.aliya.servicespractice.flutter_platform_integration.STOP_ALARM";
+
+    // At the top of your class, add:
+    private SharedPreferences sharedPreferences;
+    private static final String PREF_NAME = "AlarmPrefs";
+    private static final String KEY_ALARM_DONE = "alarmDone";
 
 
     @SuppressLint("NewApi")
@@ -60,6 +68,8 @@ public class ForegroundService extends Service {
         super.onCreate();
         instance = this;
 
+        sharedPreferences = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        alarmDone = sharedPreferences.getBoolean(KEY_ALARM_DONE, false);
 
         // Register receivers
         IntentFilter urlFilter = new IntentFilter("com.aliya.SEND_URL");
@@ -97,6 +107,13 @@ public class ForegroundService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.e(TAG, "Foreground Service Started...");
+        if (intent != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            int serviceType = intent.getIntExtra("foregroundServiceType",
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+            startForeground(1001, createNotification(), serviceType);
+        } else {
+            startForeground(1001, createNotification());
+        }
 
         // Initialize handler if null
         if (handler == null) {
@@ -229,8 +246,8 @@ public class ForegroundService extends Service {
                                 response.append(inputLine);
                             }
                             in.close();
-                            firstTimeAlarmDuringDown=false;
                             isOnline=true;
+//                            alarmDone=false;
 
                             String responseString = response.toString();
                             Log.e(TAG, "Response for " + urlString + ": " + responseString);
@@ -243,44 +260,70 @@ public class ForegroundService extends Service {
                             Log.e("TAG","++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"  );
                         } else {
                             hasError = true;
+                            firstTimeAlarmDuringDown=true;
+//                            alarmDone=false;
                             Log.e(TAG, "Error code for " + urlString + ": " + responseCode);
                             apisResponse.add("Error: " + responseCode);
                         }
                     } catch (Exception e) {
                         hasError = true;
+                        firstTimeAlarmDuringDown=true;
+//                        alarmDone=false;
+
                         Log.e(TAG, "Error hitting API for " + urlString, e);
                         apisResponse.add("Exception: " + e.getMessage());
                     }
                 }
+                // Execute final steps after processing all URLs
+                onProcessComplete(hasError);
 
-
-                // Send broadcast with updated data
-                Intent broadcastIntent = new Intent("com.aliya.TO_GET_API_DATA");
-                broadcastIntent.putStringArrayListExtra("apisResponse", new ArrayList<>(apisResponse));
-                if(onlineServers>totalServers){
-                    onlineServers=totalServers;
-                }
-                broadcastIntent.putExtra("totalServers", totalServers);
-                broadcastIntent.putExtra("onlineServers", onlineServers);
-                broadcastIntent.putExtra("isOnline", isOnline);
-                sendBroadcast(broadcastIntent);
-
-                Log.e(TAG, "Broadcast sent with responses: " + apisResponse);
-
-                // Update notification with server status
-                updateNotification();
-                if (hasError && !firstTimeAlarmDuringDown) {
-//                    showErrorNotification();
-                    isOnline=false;
-                    checkGoogleAndNotify();
-                } else {
-                    removeErrorNotification();
-                }
             } catch (Exception e) {
                 Log.e(TAG, "Overall API processing error", e);
                 updateNotification();
             }
         }).start();
+    }
+    private void onProcessComplete(boolean hasError) {
+        if(!hasError){
+            sharedPreferences.edit().putBoolean(KEY_ALARM_DONE, false).apply();
+            alarmDone = false;
+        }
+        // Normalize online servers count
+        if (onlineServers > totalServers) {
+            onlineServers = totalServers;
+        }
+
+        // Update notification with server status
+        updateNotification();
+
+        // Handle error state and notifications
+        if (hasError && firstTimeAlarmDuringDown) {
+            isOnline = false;
+            showErrorNotification();
+        } else {
+            removeErrorNotification();
+        }
+
+        // Send broadcast with the latest data
+        sendBroadcastWithData();
+    }
+    private void sendBroadcastWithData() {
+        Intent broadcastIntent = new Intent("com.aliya.TO_GET_API_DATA");
+
+        // Add package name for Android version restrictions
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
+                Build.VERSION.SDK_INT == Build.VERSION_CODES.TIRAMISU) { // Android 13
+            broadcastIntent.setPackage(this.getPackageName());
+        }
+
+        broadcastIntent.putStringArrayListExtra("apisResponse", new ArrayList<>(apisResponse));
+        broadcastIntent.putExtra("totalServers", totalServers);
+        broadcastIntent.putExtra("onlineServers", onlineServers);
+        broadcastIntent.putExtra("isOnline", isOnline);
+        broadcastIntent.putExtra("alarmDone", alarmDone);
+
+        sendBroadcast(broadcastIntent);
+        Log.e(TAG, "Broadcast sent with responses: " + apisResponse);
     }
 
     private void checkGoogleAndNotify() {
@@ -307,40 +350,45 @@ public class ForegroundService extends Service {
 
 // In your service class, modify the showErrorNotification method:
 private void showErrorNotification() {
-    // Intent for opening the app
-    Intent notificationIntent = new Intent(this, MainActivity.class);
-    notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+    if(alarmDone==false){
+        alarmDone=true;
+        sharedPreferences.edit().putBoolean(KEY_ALARM_DONE, true).apply();
+        // Intent for opening the app
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-    PendingIntent pendingIntent = PendingIntent.getActivity(
-            this, 0, notificationIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-    );
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this, 0, notificationIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
 
-    // Intent for stopping the alarm
-    Intent stopAlarmIntent = new Intent(STOP_ALARM_ACTION);
-    PendingIntent stopAlarmPendingIntent = PendingIntent.getBroadcast(
-            this,
-            0,
-            stopAlarmIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-    );
+        // Intent for stopping the alarm
+        Intent stopAlarmIntent = new Intent(STOP_ALARM_ACTION);
+        PendingIntent stopAlarmPendingIntent = PendingIntent.getBroadcast(
+                this,
+                0,
+                stopAlarmIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
 
-    @SuppressLint({"NewApi", "LocalSuppress"})
-    Notification notification = new Notification.Builder(this, ERROR_CHANNEL_ID)
-            .setContentTitle("Server Error")
-            .setContentText("One or more servers are not responding")
-            .setSmallIcon(R.drawable.companylogo)
-            .setContentIntent(pendingIntent)  // Opens app when notification is tapped
-            .addAction(new Notification.Action.Builder(
-                    null,
-                    "Stop Alarm",
-                    stopAlarmPendingIntent
-            ).build())
-            .setAutoCancel(true)
-            .build();
+        @SuppressLint({"NewApi", "LocalSuppress"})
+        Notification notification = new Notification.Builder(this, ERROR_CHANNEL_ID)
+                .setContentTitle("Server Error")
+                .setContentText("One or more servers are not responding")
+                .setSmallIcon(R.drawable.companylogo)
+                .setContentIntent(pendingIntent)  // Opens app when notification is tapped
+                .addAction(new Notification.Action.Builder(
+                        null,
+                        "Stop Alarm",
+                        stopAlarmPendingIntent
+                ).build())
+                .setAutoCancel(true)
+                .build();
 
-    notificationManager.notify(ERROR_NOTIFICATION_ID, notification);
-    playAlarmSound();
+        notificationManager.notify(ERROR_NOTIFICATION_ID, notification);
+        playAlarmSound();
+
+    }
 }
 
 
@@ -351,6 +399,9 @@ private void showErrorNotification() {
     }
 
     private void playAlarmSound() {
+        if (alarmDone) {
+            return;
+        }
         Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
         if (alarmSound == null) {
             alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
@@ -374,7 +425,8 @@ private void showErrorNotification() {
             mediaPlayer.release();
             mediaPlayer = null;
         }
-        firstTimeAlarmDuringDown=true;
+        alarmDone=true;
+        firstTimeAlarmDuringDown=false;
         // Don't cancel notification here
     }
 

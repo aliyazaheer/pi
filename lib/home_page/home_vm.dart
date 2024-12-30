@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:stacked/stacked.dart';
 import '../models/server_details.dart';
 import '../models/server_model.dart';
@@ -33,6 +35,7 @@ class HomeVM extends BaseViewModel {
   String? selectedValue;
   late String interval;
   late bool isOnline = true;
+  late bool alarmDone = false;
 
   static const methodChannel =
       MethodChannel('com.aliya.servicespractice/foreground');
@@ -102,8 +105,14 @@ class HomeVM extends BaseViewModel {
     // await initialize();
   }
 
+  // Future<void> initializeAlarmStatus() async {
+  //   alarmDone = (await SharedPref.getAlarmStatus())!;
+  //   debugPrint("Initialized isAlarmDone: $alarmDone");
+  // }
+
   Future<void> initialize() async {
     isLoading = true;
+    // await initializeAlarmStatus();
     await startBackgroundService();
     _startListeningToApiStream();
   }
@@ -113,45 +122,63 @@ class HomeVM extends BaseViewModel {
       debugPrint("No URLs to send.");
       return;
     }
+    if (Platform.isAndroid) {
+      final status = await Permission.notification.request();
+      try {
+        interval = (await SharedPref.getDelayTimeOfResponse()) ?? '60000';
+        bool initializedAlarmStatus = await SharedPref.getAlarmStatus() ?? true;
+        debugPrint(
+            "Starting service with delay: $interval, URLs: $urls, Alarm Status: $initializedAlarmStatus");
+        debugPrint("Starting service with delay: $interval and URLs: $urls");
 
-    try {
-      interval = (await SharedPref.getDelayTimeOfResponse()) ?? '60000';
-      debugPrint("Starting service with delay: $interval and URLs: $urls");
+        // Only call startForegroundService once with all necessary parameters
+        final result =
+            await methodChannel.invokeMethod('startForegroundService', {
+          'urls': urls,
+          'delayTime': int.parse(interval),
+          'initializedAlarmStatus': initializedAlarmStatus,
+        });
 
-      // Only call startForegroundService once with all necessary parameters
-      final result = await methodChannel.invokeMethod('startForegroundService',
-          {'urls': urls, 'delayTime': int.parse(interval)});
+        debugPrint("Service start result: $result");
 
-      debugPrint("Service start result: $result");
-
-      // Handle initial data if any
-      if (result != null && result is List) {
-        serverModels.clear();
-        for (String apiData in result) {
-          serverModel = serverModelFromJson(apiData);
-          serverModels.add(serverModel!);
+        // Handle initial data if any
+        if (result != null && result is List) {
+          serverModels.clear();
+          for (String apiData in result) {
+            serverModel = serverModelFromJson(apiData);
+            serverModels.add(serverModel!);
+          }
+          notifyListeners();
+          debugPrint("Processed initial server responses");
         }
-        notifyListeners();
-        debugPrint("Processed initial server responses");
+      } catch (e) {
+        debugPrint("Failed to start service: $e");
+        Fluttertoast.showToast(
+          msg: "Failed to start service",
+        );
+      } finally {
+        isLoading = false;
       }
-    } catch (e) {
-      debugPrint("Failed to start service: $e");
-      Fluttertoast.showToast(
-        msg: "Failed to start service",
-      );
-    } finally {
-      isLoading = false;
     }
   }
 
-  void _startListeningToApiStream() {
+  void _startListeningToApiStream() async {
     eventChannel.receiveBroadcastStream().listen(
-      (event) {
+      (event) async {
         if (event is Map) {
+          debugPrint("Received event: $event");
+
           try {
             totalServers = event['totalServers'] as int;
             onlineServers = event['onlineServers'] as int;
             isOnline = event['isOnline'] as bool;
+            // Parsing alarmDone safely
+            alarmDone = event['alarmDone'] is bool
+                ? event['alarmDone'] as bool
+                : (event['alarmDone'].toString().toLowerCase() == 'true');
+
+            // Save alarmDone to SharedPreferences
+            await SharedPref.saveAlarmStatus(alarmDone);
             serverModels.clear();
             apiResponses = List<String>.from(event['apisResponse']);
 
@@ -162,9 +189,14 @@ class HomeVM extends BaseViewModel {
             }
 
             isLoading = false;
+            // alarmDone=await SharedPref.saveAlarmStaus('isAlarmDone');
             notifyListeners();
+            debugPrint("Received event: $event");
+            debugPrint("Parsed alarmDone: $alarmDone");
             debugPrint(
-                "Updated - Total: $totalServers, Online: $onlineServers");
+                "Total Servers: $totalServers, Online Servers: $onlineServers");
+            debugPrint("Parsed API Responses: $apiResponses");
+
             startTimer();
           } catch (e) {
             debugPrint("Error parsing API response: $e");
@@ -211,54 +243,128 @@ class HomeVM extends BaseViewModel {
   }
 
   updateAndroidAboutUrls(int index) async {
-    try {
-      if (isServiceRunning) {
-        await methodChannel.invokeMethod('stopForegroundService');
-        serverModel = null;
-        isServiceRunning = false;
+    if (Platform.isAndroid) {
+      final status = await Permission.notification.request();
+      try {
+        if (!isServiceRunning) {
+          final servers = await SharedPref.getSavedServerDetailsList();
+          if (servers.isEmpty) return;
+
+          urls.clear();
+          for (var server in servers) {
+            await addServerDetailsList(server);
+            String serverUrl = server.serverUrl;
+            if (!serverUrl.startsWith('https://')) {
+              serverUrl = 'https://$serverUrl';
+            }
+            if (serverUrl.endsWith('.com') &&
+                !serverUrl.endsWith('/rms/v1/serverHealth')) {
+              serverUrl = '$serverUrl/rms/v1/serverHealth';
+            }
+            urls.add(serverUrl);
+
+            debugPrint('Restarting service with URLs: $urls');
+          }
+          // Restart service
+          await methodChannel.invokeMethod('updateServiceUrls', {
+            'urls': urls,
+            'delayTime': int.parse(interval),
+          });
+          debugPrint(
+              "++++++++++++++++++++++++++++++++++9999 $urls  +++++++++++++++++++++++999");
+          isServiceRunning = true;
+        } else if (isServiceRunning) {
+          await methodChannel.invokeMethod('stopForegroundService');
+          serverModel = null;
+          isServiceRunning = false;
+          notifyListeners();
+
+          final servers = await SharedPref.getSavedServerDetailsList();
+          if (servers.isEmpty) return;
+
+          urls.clear();
+          for (var server in servers) {
+            await addServerDetailsList(server);
+            String serverUrl = server.serverUrl;
+            if (!serverUrl.startsWith('https://')) {
+              serverUrl = 'https://$serverUrl';
+            }
+            if (serverUrl.endsWith('.com') &&
+                !serverUrl.endsWith('/rms/v1/serverHealth')) {
+              serverUrl = '$serverUrl/rms/v1/serverHealth';
+            }
+            urls.add(serverUrl);
+
+            debugPrint('Restarting service with URLs: $urls');
+          }
+          // Restart service
+          await methodChannel.invokeMethod('updateServiceUrls', {
+            'urls': urls,
+            'delayTime': int.parse(interval),
+          });
+          debugPrint(
+              "++++++++++++++++++++++++++++++++++9999 $urls  +++++++++++++++++++++++999");
+          isServiceRunning = true;
+          // Update delay time
+          // await methodChannel
+          //     .invokeMethod('delayTime', {'delayTime': int.parse(interval)});
+        }
+
+        _startListeningToApiStream();
         notifyListeners();
-
-        final servers = await SharedPref.getSavedServerDetailsList();
-        if (servers.isEmpty) {
-          debugPrint('No servers found in SharedPreferences');
-          return;
-        }
-
-        urls.clear();
-        for (var server in servers) {
-          await addServerDetailsList(server);
-          String serverUrl = server.serverUrl;
-
-          // URL formatting
-          if (!serverUrl.startsWith('https://')) {
-            serverUrl = 'https://$serverUrl';
-          }
-          if (serverUrl.endsWith('.com') &&
-              !serverUrl.endsWith('/rms/v1/serverHealth')) {
-            serverUrl = '$serverUrl/rms/v1/serverHealth';
-          }
-          urls.add(serverUrl);
-        }
-        interval = (await SharedPref.getDelayTimeOfResponse()) ?? '60000';
-
-        debugPrint('Updating service with URLs: $urls');
-        debugPrint('Using delay time: $interval milliseconds');
-
-        // Call native method to update service
-        final result = await methodChannel.invokeMethod('updateServiceUrls', {
-          'urls': urls,
-          'delayTime': int.parse(interval),
-        });
-
-        debugPrint('Service update result: $result');
-        isServiceRunning = true;
+      } catch (e) {
+        debugPrint('Error managing service: $e');
       }
-      _startListeningToApiStream();
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error updating service: $e');
-      // Handle error appropriately
     }
+
+    // try {
+    //   if (isServiceRunning) {
+    //     await methodChannel.invokeMethod('stopForegroundService');
+    //     serverModel = null;
+    //     isServiceRunning = false;
+    //     notifyListeners();
+
+    //     final servers = await SharedPref.getSavedServerDetailsList();
+    //     if (servers.isEmpty) {
+    //       debugPrint('No servers found in SharedPreferences');
+    //       return;
+    //     }
+
+    //     urls.clear();
+    //     for (var server in servers) {
+    //       await addServerDetailsList(server);
+    //       String serverUrl = server.serverUrl;
+
+    //       // URL formatting
+    //       if (!serverUrl.startsWith('https://')) {
+    //         serverUrl = 'https://$serverUrl';
+    //       }
+    //       if (serverUrl.endsWith('.com') &&
+    //           !serverUrl.endsWith('/rms/v1/serverHealth')) {
+    //         serverUrl = '$serverUrl/rms/v1/serverHealth';
+    //       }
+    //       urls.add(serverUrl);
+    //     }
+    //     interval = (await SharedPref.getDelayTimeOfResponse()) ?? '60000';
+
+    //     debugPrint('Updating service with URLs: $urls');
+    //     debugPrint('Using delay time: $interval milliseconds');
+
+    //     // Call native method to update service
+    //     final result = await methodChannel.invokeMethod('updateServiceUrls', {
+    //       'urls': urls,
+    //       'delayTime': int.parse(interval),
+    //     });
+
+    //     debugPrint('Service update result: $result');
+    //     isServiceRunning = true;
+    //   }
+    //   _startListeningToApiStream();
+    //   notifyListeners();
+    // } catch (e) {
+    //   debugPrint('Error updating service: $e');
+    //   // Handle error appropriately
+    // }
   }
 
   Future<void> fetchDataAndStartService() async {
@@ -294,88 +400,94 @@ class HomeVM extends BaseViewModel {
   }
 
   Future<void> off() async {
-    try {
-      if (isServiceRunning) {
-        await methodChannel.invokeMethod('stopForegroundService');
-        serverModel = null;
-        isServiceRunning = false;
-        notifyListeners();
+    if (Platform.isAndroid) {
+      final status = await Permission.notification.request();
+      try {
+        if (isServiceRunning) {
+          await methodChannel.invokeMethod('stopForegroundService');
+          serverModel = null;
+          isServiceRunning = false;
+          notifyListeners();
+        }
+      } catch (e) {
+        debugPrint("Failed to stop service: $e");
       }
-    } catch (e) {
-      debugPrint("Failed to stop service: $e");
     }
   }
 
   Future<void> restartServiceWithInterval(String interval) async {
-    try {
-      if (!isServiceRunning) {
-        final servers = await SharedPref.getSavedServerDetailsList();
-        if (servers.isEmpty) return;
+    if (Platform.isAndroid) {
+      final status = await Permission.notification.request();
+      try {
+        if (!isServiceRunning) {
+          final servers = await SharedPref.getSavedServerDetailsList();
+          if (servers.isEmpty) return;
 
-        urls.clear();
-        for (var server in servers) {
-          await addServerDetailsList(server);
-          String serverUrl = server.serverUrl;
-          if (!serverUrl.startsWith('https://')) {
-            serverUrl = 'https://$serverUrl';
-          }
-          if (serverUrl.endsWith('.com') &&
-              !serverUrl.endsWith('/rms/v1/serverHealth')) {
-            serverUrl = '$serverUrl/rms/v1/serverHealth';
-          }
-          urls.add(serverUrl);
+          urls.clear();
+          for (var server in servers) {
+            await addServerDetailsList(server);
+            String serverUrl = server.serverUrl;
+            if (!serverUrl.startsWith('https://')) {
+              serverUrl = 'https://$serverUrl';
+            }
+            if (serverUrl.endsWith('.com') &&
+                !serverUrl.endsWith('/rms/v1/serverHealth')) {
+              serverUrl = '$serverUrl/rms/v1/serverHealth';
+            }
+            urls.add(serverUrl);
 
-          debugPrint('Restarting service with URLs: $urls');
+            debugPrint('Restarting service with URLs: $urls');
+          }
+          // Restart service
+          await methodChannel.invokeMethod('restartForegroundService', {
+            'urls': urls,
+            'delayTime': int.parse(interval),
+          });
+          debugPrint(
+              "++++++++++++++++++++++++++++++++++9999 $urls  +++++++++++++++++++++++999");
+          isServiceRunning = true;
+        } else if (isServiceRunning) {
+          await methodChannel.invokeMethod('stopForegroundService');
+          serverModel = null;
+          isServiceRunning = false;
+          notifyListeners();
+
+          final servers = await SharedPref.getSavedServerDetailsList();
+          if (servers.isEmpty) return;
+
+          urls.clear();
+          for (var server in servers) {
+            await addServerDetailsList(server);
+            String serverUrl = server.serverUrl;
+            if (!serverUrl.startsWith('https://')) {
+              serverUrl = 'https://$serverUrl';
+            }
+            if (serverUrl.endsWith('.com') &&
+                !serverUrl.endsWith('/rms/v1/serverHealth')) {
+              serverUrl = '$serverUrl/rms/v1/serverHealth';
+            }
+            urls.add(serverUrl);
+
+            debugPrint('Restarting service with URLs: $urls');
+          }
+          // Restart service
+          await methodChannel.invokeMethod('restartForegroundService', {
+            'urls': urls,
+            'delayTime': int.parse(interval),
+          });
+          debugPrint(
+              "++++++++++++++++++++++++++++++++++9999 $urls  +++++++++++++++++++++++999");
+          isServiceRunning = true;
+          // Update delay time
+          // await methodChannel
+          //     .invokeMethod('delayTime', {'delayTime': int.parse(interval)});
         }
-        // Restart service
-        await methodChannel.invokeMethod('restartForegroundService', {
-          'urls': urls,
-          'delayTime': int.parse(interval),
-        });
-        debugPrint(
-            "++++++++++++++++++++++++++++++++++9999 $urls  +++++++++++++++++++++++999");
-        isServiceRunning = true;
-      } else if (isServiceRunning) {
-        await methodChannel.invokeMethod('stopForegroundService');
-        serverModel = null;
-        isServiceRunning = false;
+
+        _startListeningToApiStream();
         notifyListeners();
-
-        final servers = await SharedPref.getSavedServerDetailsList();
-        if (servers.isEmpty) return;
-
-        urls.clear();
-        for (var server in servers) {
-          await addServerDetailsList(server);
-          String serverUrl = server.serverUrl;
-          if (!serverUrl.startsWith('https://')) {
-            serverUrl = 'https://$serverUrl';
-          }
-          if (serverUrl.endsWith('.com') &&
-              !serverUrl.endsWith('/rms/v1/serverHealth')) {
-            serverUrl = '$serverUrl/rms/v1/serverHealth';
-          }
-          urls.add(serverUrl);
-
-          debugPrint('Restarting service with URLs: $urls');
-        }
-        // Restart service
-        await methodChannel.invokeMethod('restartForegroundService', {
-          'urls': urls,
-          'delayTime': int.parse(interval),
-        });
-        debugPrint(
-            "++++++++++++++++++++++++++++++++++9999 $urls  +++++++++++++++++++++++999");
-        isServiceRunning = true;
-        // Update delay time
-        // await methodChannel
-        //     .invokeMethod('delayTime', {'delayTime': int.parse(interval)});
+      } catch (e) {
+        debugPrint('Error managing service: $e');
       }
-
-      _startListeningToApiStream();
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error managing service: $e');
     }
   }
 

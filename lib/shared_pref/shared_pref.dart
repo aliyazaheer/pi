@@ -71,4 +71,14 @@ class SharedPref {
     debugPrint('+++++++++++++ $delayTime++++++++++++++++++++');
     return delayTime;
   }
+
+  static Future<void> saveAlarmStatus(bool isAlarmDone) async {
+    await prefs?.setBool('isAlarmDone', isAlarmDone);
+  }
+
+  static Future<bool?> getAlarmStatus() async {
+    bool? Alarm = prefs?.getBool('isAlarmDone');
+    debugPrint('+++++++++++++ $Alarm++++++++++++++++++++');
+    return Alarm;
+  }
 }

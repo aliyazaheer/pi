@@ -10,6 +10,7 @@ import 'widgets/heading_of_url.dart';
 import 'widgets/headings_of_cpu_memory_disks_card.dart';
 import 'widgets/memory_card.dart';
 import '../common_widgets/space.dart';
+import 'widgets/online_status.dart';
 import 'widgets/padding_of_cards.dart';
 import 'widgets/url_card.dart';
 import 'widgets/webview_card_widget.dart';
@@ -42,7 +43,16 @@ class DetailPageVU extends StackedView<DetailPageVM> {
   Widget builder(BuildContext context, DetailPageVM viewModel, Widget? child) {
     return Scaffold(
         appBar: AppBar(
-          title: Text('${serverDetails?.serverName}'),
+          title: Align(
+            alignment: Alignment.centerLeft,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${serverDetails?.serverName}'),
+                onlineStatus(viewModel, context),
+              ],
+            ),
+          ),
           backgroundColor: Theme.of(context).brightness == Brightness.dark
               ? const Color(0xFF2B313D)
               : const Color(0xFFF5F5F5),
@@ -50,6 +60,8 @@ class DetailPageVU extends StackedView<DetailPageVM> {
         body: SingleChildScrollView(
             child: Column(children: [
           if (viewModel.serverModel == null) ...[
+            headingOfCpuMemoryAndDisksCards(
+                viewModel: viewModel, textOfHeading: 'Swagger Page:'),
             paddingOfCards(
                 viewModel: viewModel,
                 glowOfCard: glowOfCard(

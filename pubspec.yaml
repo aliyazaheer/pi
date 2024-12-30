@@ -41,6 +41,7 @@ dependencies:
   fl_chart: ^0.69.2
   fluttertoast: ^8.2.10
   webview_flutter: ^4.8.0
+  permission_handler: ^11.0.0
   
 
 dev_dependencies:
