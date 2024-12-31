@@ -299,7 +299,8 @@ public class ForegroundService extends Service {
         // Handle error state and notifications
         if (hasError && firstTimeAlarmDuringDown) {
             isOnline = false;
-            showErrorNotification();
+            checkGoogleAndNotify();
+//            showErrorNotification();
         } else {
             removeErrorNotification();
         }
